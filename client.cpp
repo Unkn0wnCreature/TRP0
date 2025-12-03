@@ -69,7 +69,6 @@ private:
 			return false;
 		}
 
-		cout<<"Connected to TCP server"<<endl;
 		return true;
 	}
 
@@ -163,7 +162,7 @@ private:
 			memset(buffer, 0, sizeof(buffer));
 			bytes_received = recv(sockfd, buffer, sizeof(buffer), 0);
 			if (bytes_received > 0){
-				cout<<"Server replyed: " << buffer <<endl;
+				cout<< buffer <<endl;
 			} else {
 				cerr<<"Server disconnected"<<endl;
 				break;
