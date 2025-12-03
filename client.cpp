@@ -63,7 +63,7 @@ private:
 		}
 
 		if (connect(sockfd, (sockaddr*)&server_address, sizeof(server_address)) < 0){
-			cerr<<"\nНе удалось подключиться к серверу"<<endl;
+			cerr<<"Не удалось подключиться к серверу"<<endl;
 			close(sockfd);
 			sockfd = -1;
 			return false;

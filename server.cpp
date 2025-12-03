@@ -131,7 +131,7 @@ private:
 
 			{
 				lock_guard<mutex> lock(console_mutex);
-				cout<<"Подключён клиент "<< current_client_id <<" : "<< client_ip<<" : "<<ntohs(client_address.sin_port)<<endl;
+				cout<<"Подключён клиент "<< current_client_id <<" : "<< client_ip<<" : "<<ntohs(client_address.sin_port)<<" : "<< threads.size() << " потоков активно"<<endl;
 			}
 
 			threads.emplace_back([this, client_socket, current_client_id, client_address]() {
