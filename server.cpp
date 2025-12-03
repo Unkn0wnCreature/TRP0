@@ -11,6 +11,8 @@
 #include <vector>
 #include <sstream>
 #include <limits>
+#include <thread>
+#include <mutex>
 #include "matrix.h"
 #include "graph.h"
 using namespace std;
@@ -20,6 +22,11 @@ private:
 	int server_fd;
 	int port;
 	bool use_tcp;
+	vector<thread> threads;
+	mutex console_mutex;
+
+	int client_counter = 0;
+	mutex counter_mutex;
 public:
 	Server(int port, bool use_tcp){
 		server_fd = -1;
@@ -30,6 +37,10 @@ public:
 	~Server(){
 		if (server_fd != -1){
 			close(server_fd);
+		}
+
+		for (auto& thread : threads){
+			if (thread.joinable()){thread.join();}
 		}
 	}
 
@@ -70,8 +81,7 @@ private:
 			close(server_fd);
 			return false;
 		}
-
-		std::cout<<"TCP server launched on port "<< port <<std::endl;
+		
 		return handle_tcp_connections(server_fd);
 	}
 
@@ -111,21 +121,34 @@ private:
 
 			char client_ip[INET_ADDRSTRLEN];
 			inet_ntop(AF_INET, &client_address.sin_addr, client_ip, INET_ADDRSTRLEN);
-			std::cout<<"Client accepted: "<<client_ip<<":"<<ntohs(client_address.sin_port)<<std::endl;
-			
-			pid_t pid = fork();
-			if (pid == 0){
-				close(server_fd);
-				handle_tcp_client(client_socket);
-				close(client_socket);
-				exit(0);
-			} else if (pid > 0){
-				close(client_socket);
-			} else {
-				std::cerr<<"Error to create process"<<std::endl;
-				close(client_socket);
+
+			//----
+			int current_client_id;
+			{
+				lock_guard<mutex> lock(console_mutex);
+				current_client_id = ++client_counter;
 			}
-			
+
+			{
+				lock_guard<mutex> lock(console_mutex);
+				cout<<"Подключён клиент "<< current_client_id <<" : "<< client_ip<<" : "<<ntohs(client_address.sin_port)<<endl;
+			}
+
+			threads.emplace_back([this, client_socket, current_client_id, client_address]() {
+					handle_tcp_client(client_socket);
+
+					{
+						lock_guard<mutex> lock(console_mutex);
+						cout<<"Поток для клиента "<< current_client_id <<" завершён"<<endl;
+					}
+				});
+			//---
+				if (threads.size() > 100){
+				threads.erase(remove_if(threads.begin(), threads.end(),[](const thread& t) {
+					return !t.joinable();
+					}), 
+					threads.end());
+			}		
 		}
 		return true;
 	}
@@ -167,22 +190,9 @@ private:
 				break;
 			}
 			
-			/*
-			if (buffer[bytes_read-1] == '\n'){
-				buffer[bytes_read-1] = '\0';
-			}
-			*/
-
-			//std::cout<<"Получено от: "<<buffer<<std::endl;
-
 			auto matrix = parse_matrix(buffer);
 
 			string response;
-
-			//std::string response = "status:received";
-			//response += buffer;
-
-			//send(client_socket, response.c_str(), response.length(), 0);
 
 			if (strncmp(buffer, "exit", 4) == 0){break;}
 
@@ -192,15 +202,9 @@ private:
 			if (bytes_read <= 0){
 				break;
 			}
-			/*
-			if (buffer[bytes_read-1] == '\n'){
-				buffer[bytes_read-1] = '\0';
-			}
-			*/
-			//std::cout<<"Получено от: "<<buffer<<std::endl;
-
+		
 			auto [a, b] = get_elements(buffer);
-			auto [min_dist, path] = dijkstra(matrix, a, b);
+			auto [min_dist, path] = dijkstra(matrix, a-1, b-1);
 
 			if (min_dist == INF){
 				response = "Пути между вершинами не существует";

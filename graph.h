@@ -18,7 +18,7 @@ string convert_len_to_string(int length){
 string convert_path_to_string(vector<int> path){
 	string converted_path;
 	for (int i = 0; i < path.size(); i++){
-		converted_path += to_string(path[i]);
+		converted_path += to_string(path[i]+1);
 		if (i != path.size() - 1){converted_path += " -> ";}
 	}
 	return converted_path;
@@ -72,10 +72,10 @@ pair<int, int> get_elements(const char* str){
 	int a,b;
 	string str_elements = str;
 	stringstream ss(str_elements);
-	char ch;
+	//char ch;
 
 	ss>>a;
-	ss>>ch;
+	//ss>>ch;
 	ss>>b;
 
 	return {a,b};

@@ -121,16 +121,6 @@ private:
 
 			if (message == "exit"){break;}
 
-			/*
-			memset(buffer, 0, sizeof(buffer));
-			ssize_t bytes_received = recv(sockfd, buffer, sizeof(buffer), 0);
-			if (bytes_received > 0){
-				cout<<"Server replyed: " << buffer <<endl;
-			} else {
-				cerr<<"Server disconnected"<<endl;
-				break;
-			}
-			*/
 			//-------------------------------------------------------------------
 			cout<<"\nВведите начальную и конечную вершины:"<<endl;
 			getline(cin, message);
@@ -162,7 +152,7 @@ private:
 			memset(buffer, 0, sizeof(buffer));
 			bytes_received = recv(sockfd, buffer, sizeof(buffer), 0);
 			if (bytes_received > 0){
-				cout<< buffer <<endl;
+				cout<<"\n"<< buffer <<endl;
 			} else {
 				cerr<<"Server disconnected"<<endl;
 				break;
