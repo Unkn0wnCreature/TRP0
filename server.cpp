@@ -154,24 +154,25 @@ private:
 	}
 
 	bool handle_udp_connections(int server_fd){
-		char buffer[1024];
+		//char buffer[1024];
+		//string welcome = "Соединение с сервером установлено";
 		sockaddr_in client_address;
 		socklen_t addr_len = sizeof(client_address);
 
 		while (true){
-			memset(buffer, 0, sizeof(buffer));
-			ssize_t bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
-			if (bytes_received > 0){
-				//buffer[bytes_received] = '\0';
-				char client_ip[INET_ADDRSTRLEN];
-				inet_ntop(AF_INET, &client_address.sin_addr, client_ip, INET_ADDRSTRLEN);
-				std::cout<<"Received from "<<client_ip<<":"<<ntohs(client_address.sin_port)<<":"<<buffer<<std::endl;
+			//memset(buffer, 0, sizeof(buffer));
+			//ssize_t bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
+			//if (bytes_received <= 0){break;}
+				
+			char client_ip[INET_ADDRSTRLEN];
+			inet_ntop(AF_INET, &client_address.sin_addr, client_ip, INET_ADDRSTRLEN);
 
-				std::string response = "Echo: ";
-				response += buffer;
+			//string response;
+			//response += buffer;
 
-				sendto(server_fd, response.c_str(), response.length(), 0, (sockaddr*)&client_address, addr_len);
-			}
+			//sendto(server_fd, response.c_str(), response.length(), 0, (sockaddr*)&client_address, addr_len);
+
+			handle_udp_client(server_fd, client_address, client_ip);
 		}
 		return true;
 	}
@@ -216,6 +217,41 @@ private:
 
 			if (strncmp(buffer, "exit", 4) == 0){break;}
 
+		}
+	}
+
+	void handle_udp_client(int server_fd, sockaddr_in client_address, char client_ip[INET_ADDRSTRLEN]){
+		char buffer[1024];
+		string welcome = "Соединение с сервером установлено";
+		socklen_t addr_len = sizeof(client_address);
+
+		//sendto(server_fd, welcome.c_str(), welcome.length(), 0, (sockaddr*)&client_address, addr_len);
+
+		while (true){
+			memset(buffer, 0, sizeof(buffer));
+			ssize_t bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
+			if (bytes_received <= 0){break;}
+
+			auto matrix = parse_matrix(buffer);
+				
+			string response;
+
+			if (strncmp(buffer, "exit", 4) == 0){break;}
+
+			memset(buffer, 0, sizeof(buffer));
+			bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
+			if (bytes_received <= 0){break;}
+
+			auto [a, b] = get_elements(buffer);
+			auto [min_dist, path] = dijkstra(matrix, a-1, b-1);
+
+			if (min_dist == INF){
+				response = "Пути между вершинами не существует";
+			} else{
+				response = "Результат:  " + convert_len_to_string(min_dist) + "\nКратчайший путь: " + convert_path_to_string(path);
+			}
+
+			sendto(server_fd, response.c_str(), response.length(), 0, (sockaddr*)&client_address, addr_len);
 		}
 	}
 };

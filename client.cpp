@@ -79,7 +79,6 @@ private:
 			return false;
 		}
 
-		cout<<"UDP ready to send data on "<< server_ip <<":"<<port<<endl;
 		return true;
 	}
 
@@ -125,9 +124,7 @@ private:
 			cout<<"\nВведите начальную и конечную вершины:"<<endl;
 			getline(cin, message);
 
-			if (message.empty()){
-				continue;
-			}
+			if (message.empty()){continue;}
 			
 			if (message != "exit"){
 				auto [a, b] = get_elements(message.c_str());
@@ -166,8 +163,15 @@ private:
 		char buffer[1024];
 		socklen_t addr_len = sizeof(server_address);
 
+		/*
+		ssize_t bytes_received = recvfrom(sockfd, buffer, sizeof(buffer), 0, (sockaddr*)&server_address, &addr_len);
+		if (bytes_received > 0){
+			cout<< buffer <<endl;
+		}
+		*/
+
 		while (true){
-			cout<<"Enter message (or exit):"<<endl;
+			cout<<"\nВведите описание графа:" <<endl;
 			getline(cin, message);
 
 			if (message.empty()){continue;}
@@ -175,15 +179,17 @@ private:
 			if (message != "exit"){
 
 				if (!isValidMatrix(message.c_str())){
-					cout<<"Invalid matrix"<<endl;
+					cout<<"\nНеверный формат ввода графа"<<endl;
 					continue;
 				}
 
 				if (!matrix_is_correct(message.c_str(), 2)){
-					cout<<"Matrix must contain at least 6 points"<<endl;
+					cout<<"\nГраф должен содержать не менее 6 вершин и 6 рёбер"<<endl;
 					continue;
 				}
 			}
+			
+			auto current_matrix = parse_matrix(message.c_str());
 
 			ssize_t bytes_sent = sendto(sockfd, message.c_str(), message.length(), 0, (sockaddr*)&server_address, addr_len);
 
@@ -194,13 +200,38 @@ private:
 
 			if (message == "exit"){break;}
 
+			cout<<"\nВведите начальную и конечную вершины:"<<endl;
+			getline(cin, message);
+
+			if (message.empty()){continue;}
+
+			if (message != "exit"){
+				auto [a, b] = get_elements(message.c_str());
+				int max = (a<=b ? b : a);
+				int min = (a<=b ? a : b);
+
+				if (min < 0 || max >= current_matrix.size()){
+					cout<<"\nВершины не найдены в графе\n"<<endl;
+					continue;
+				}
+			}
+
+			bytes_sent = sendto(sockfd, message.c_str(), message.length(), 0, (sockaddr*)&server_address, addr_len);
+
+			if (bytes_sent < 0){
+				cerr<<"Error to send message"<<endl;
+				break;
+			}
+
+			if (message == "exit"){break;}
+			
 			memset(buffer, 0, sizeof(buffer));
 			ssize_t bytes_received = recvfrom(sockfd, buffer, sizeof(buffer), 0, (sockaddr*)&server_address, &addr_len);
-
 			if (bytes_received > 0){
-				cout<<"Server replied: "<< buffer <<endl;
+				cout<<"\n"<< buffer <<endl;
 			} else {
-				cerr<<"Error to receive message"<<endl;
+				cerr<<"Server disconnected"<<endl;
+				break;
 			}
 		}
 	}
