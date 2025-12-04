@@ -186,11 +186,12 @@ private:
 
 		while (true){
 			memset(buffer, 0, sizeof(buffer));
-			ssize_t bytes_read = recv(client_socket, buffer, sizeof(buffer)-1, 0);
-			if (bytes_read <= 0){
-				break;
-			}
 			
+			if (!receive_tcp(client_socket, buffer)){
+				cout<<"error to receive"<<endl;
+				break;
+			}			
+
 			auto matrix = parse_matrix(buffer);
 
 			string response;
@@ -199,11 +200,10 @@ private:
 
 			//------------------------------------------------------------------
 			memset(buffer, 0, sizeof(buffer));
-			bytes_read = recv(client_socket, buffer, sizeof(buffer)-1, 0);
-			if (bytes_read <= 0){
+			if (!receive_tcp(client_socket, buffer)){
+				cout<<"error to receive"<<endl;
 				break;
-			}
-		
+			}			
 			auto [a, b] = get_elements(buffer);
 			auto [min_dist, path] = dijkstra(matrix, a-1, b-1);
 
@@ -213,7 +213,10 @@ private:
 				response = "Результат:  " + convert_len_to_string(min_dist) + "\nКратчайший путь: " + convert_path_to_string(path);
 			}
 
-			send(client_socket, response.c_str(), response.length(), 0);
+			if (!send_tcp(client_socket, response)){
+				cout<<"error to sent"<<endl;
+				break;
+			}
 
 			if (strncmp(buffer, "exit", 4) == 0){break;}
 
@@ -229,8 +232,8 @@ private:
 
 		while (true){
 			memset(buffer, 0, sizeof(buffer));
-			ssize_t bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
-			if (bytes_received <= 0){break;}
+			
+			if (!receive_udp(server_fd, buffer, client_address)){break;}
 
 			auto matrix = parse_matrix(buffer);
 				
@@ -239,8 +242,8 @@ private:
 			if (strncmp(buffer, "exit", 4) == 0){break;}
 
 			memset(buffer, 0, sizeof(buffer));
-			bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
-			if (bytes_received <= 0){break;}
+			
+			if (!receive_udp(server_fd, buffer, client_address)){break;}
 
 			auto [a, b] = get_elements(buffer);
 			auto [min_dist, path] = dijkstra(matrix, a-1, b-1);
@@ -251,9 +254,38 @@ private:
 				response = "Результат:  " + convert_len_to_string(min_dist) + "\nКратчайший путь: " + convert_path_to_string(path);
 			}
 
-			sendto(server_fd, response.c_str(), response.length(), 0, (sockaddr*)&client_address, addr_len);
+			if (!send_udp(server_fd, response, client_address)){
+				break;
+			}
 		}
 	}
+
+	bool send_tcp(int sockfd, const string& message){
+		ssize_t bytes_sent = send(sockfd, message.c_str(), message.length(), 0);
+
+		return (bytes_sent > 0);
+	}
+
+	bool receive_tcp(int sockfd, char buffer[1024]){
+		ssize_t bytes_received = recv(sockfd, buffer, 1024, 0);
+
+		return (bytes_received > 0);
+	}
+	
+	bool send_udp(int sockfd, const string& message, sockaddr_in client_address){
+		socklen_t addr_len = sizeof(client_address);
+		ssize_t bytes_sent = sendto(sockfd, message.c_str(), message.length(), 0, (sockaddr*)&client_address, addr_len);
+
+		return (bytes_sent > 0);
+	}
+
+	bool receive_udp(int sockfd, char buffer[1024], sockaddr_in client_address){
+		socklen_t addr_len = sizeof(client_address);
+		ssize_t bytes_received = recvfrom(sockfd, buffer, 1024, 0, (sockaddr*)&client_address, &addr_len);
+
+		return (bytes_received > 0);
+	}
+
 };
 
 int main(int argc, char* argv[]){

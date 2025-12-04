@@ -84,7 +84,7 @@ bool isValidMatrix(const char* str){
 
 	return true;
 }
-/*
+
 void show_matrix(const char* strmatrix){
 	auto matrix = parse_matrix(strmatrix);
 
@@ -95,4 +95,4 @@ void show_matrix(const char* strmatrix){
 		cout<<endl;
 	}
 }
-*/
+

@@ -111,12 +111,10 @@ private:
 			
 			auto current_matrix = parse_matrix(message.c_str());
 
-			ssize_t bytes_sent = send(sockfd, message.c_str(), message.length(), 0);
-
-			if (bytes_sent < 0){
-				cerr<<"Error to send message"<<endl;
+			if (!send_tcp(sockfd, message)){
+				cout<<"error to send"<<endl;
 				break;
-			}
+			}	
 
 			if (message == "exit"){break;}
 
@@ -131,30 +129,26 @@ private:
 				int max = (a<=b ? b : a);
 				int min = (a<=b ? a : b);
 
-				if (min < 0 || max >= current_matrix.size()){
+				if (min <= 0 || max > current_matrix.size()){
 					cout<<"\nВершины не найдены в графе\n"<<endl;
 					continue;
 				}
 			}
-
-			bytes_sent = send(sockfd, message.c_str(), message.length(), 0);
-
-			if (bytes_sent < 0){
-				cerr<<"Error to send message"<<endl;
+			
+			if (!send_tcp(sockfd, message)){
+				cout<<"error to send"<<endl;
 				break;
-			}
-
+			}	
+			
 			if (message == "exit"){break;}
 			
 			memset(buffer, 0, sizeof(buffer));
-			bytes_received = recv(sockfd, buffer, sizeof(buffer), 0);
-			if (bytes_received > 0){
-				cout<<"\n"<< buffer <<endl;
-			} else {
-				cerr<<"Server disconnected"<<endl;
-				break;
-			}
 
+			if (!receive_tcp(sockfd, buffer)){
+				cout<<"server disconnected"<<endl;
+			}
+			cout<<"\n"<< buffer <<endl;
+			//bytes_received = recv(sockfd, buffer, sizeof(buffer), 0);
 		}	
 	}
 
@@ -191,12 +185,7 @@ private:
 			
 			auto current_matrix = parse_matrix(message.c_str());
 
-			ssize_t bytes_sent = sendto(sockfd, message.c_str(), message.length(), 0, (sockaddr*)&server_address, addr_len);
-
-			if (bytes_sent < 0){
-				cerr<<"Error to sent"<<endl;
-				break;
-			}
+			if (!send_udp(sockfd, message, server_address)){break;}
 
 			if (message == "exit"){break;}
 
@@ -210,30 +199,63 @@ private:
 				int max = (a<=b ? b : a);
 				int min = (a<=b ? a : b);
 
-				if (min < 0 || max >= current_matrix.size()){
+				if (min <= 0 || max > current_matrix.size()){
 					cout<<"\nВершины не найдены в графе\n"<<endl;
 					continue;
 				}
 			}
-
-			bytes_sent = sendto(sockfd, message.c_str(), message.length(), 0, (sockaddr*)&server_address, addr_len);
-
-			if (bytes_sent < 0){
-				cerr<<"Error to send message"<<endl;
-				break;
-			}
+			
+			if (!send_udp(sockfd, message, server_address)){break;}
 
 			if (message == "exit"){break;}
 			
 			memset(buffer, 0, sizeof(buffer));
 			ssize_t bytes_received = recvfrom(sockfd, buffer, sizeof(buffer), 0, (sockaddr*)&server_address, &addr_len);
-			if (bytes_received > 0){
-				cout<<"\n"<< buffer <<endl;
-			} else {
-				cerr<<"Server disconnected"<<endl;
+			if (bytes_received <= 0){
+				cout<<"error to receive"<<endl;
 				break;
+			} else {
+				cout<<"\n"<< buffer <<endl;
 			}
 		}
+	}
+
+	bool send_tcp(int sockfd, const string& message){
+		ssize_t bytes_sent = send(sockfd, message.c_str(), message.length(), 0);
+
+		return (bytes_sent > 0);
+	}
+
+	bool receive_tcp(int sockfd, char buffer[1024]){
+		ssize_t bytes_received = recv(sockfd, buffer, 1024, 0);
+
+		return (bytes_received > 0);
+	}
+	
+	bool send_udp(int sockfd, const string& message, sockaddr_in address){
+		socklen_t addr_len = sizeof(address);
+		ssize_t bytes_sent = sendto(sockfd, message.c_str(), message.length(), 0, (sockaddr*)&address, addr_len);
+
+		return (bytes_sent > 0);
+	}
+
+	bool receive_udp(int sockfd, char buffer[1024], sockaddr_in address){
+		socklen_t addr_len = sizeof(address);
+		ssize_t bytes_received = recvfrom(sockfd, buffer, 1024, 0, (sockaddr*)&address, &addr_len);
+
+		return (bytes_received > 0);
+	}
+
+
+	bool check_connection(){
+		char buffer[10];
+		socklen_t addr_len = sizeof(server_address);
+
+		ssize_t bytes_received = recvfrom(sockfd, buffer, sizeof(buffer), 0, (sockaddr*)&server_address, &addr_len);
+
+		if (buffer != "1"){return false;}
+
+		return true;
 	}
 };
 
