@@ -153,7 +153,7 @@ private:
 	}
 
 	void run_udp(){
-		string message;
+		string message, matr, dot;
 		char buffer[1024];
 		socklen_t addr_len = sizeof(server_address);
 
@@ -166,36 +166,38 @@ private:
 
 		while (true){
 			cout<<"\nВведите описание графа:" <<endl;
-			getline(cin, message);
+			getline(cin, matr);
 
-			if (message.empty()){continue;}
+			if (matr.empty()){continue;}
 			
-			if (message != "exit"){
+			if (matr != "exit"){
 
-				if (!isValidMatrix(message.c_str())){
+				if (!isValidMatrix(matr.c_str())){
 					cout<<"\nНеверный формат ввода графа"<<endl;
 					continue;
 				}
 
-				if (!matrix_is_correct(message.c_str(), 2)){
+				if (!matrix_is_correct(matr.c_str(), 2)){
 					cout<<"\nГраф должен содержать не менее 6 вершин и 6 рёбер"<<endl;
 					continue;
 				}
 			}
 			
-			auto current_matrix = parse_matrix(message.c_str());
+			auto current_matrix = parse_matrix(matr.c_str());
 
-			if (!send_udp(sockfd, message, server_address)){break;}
+			message += matr;
+
+			//if (!send_udp(sockfd, message, server_address)){break;}
 
 			if (message == "exit"){break;}
 
 			cout<<"\nВведите начальную и конечную вершины:"<<endl;
-			getline(cin, message);
+			getline(cin, dot);
 
-			if (message.empty()){continue;}
+			if (dot.empty()){continue;}
 
-			if (message != "exit"){
-				auto [a, b] = get_elements(message.c_str());
+			if (dot != "exit"){
+				auto [a, b] = get_elements(dot.c_str());
 				int max = (a<=b ? b : a);
 				int min = (a<=b ? a : b);
 
@@ -204,10 +206,12 @@ private:
 					continue;
 				}
 			}
+
+			message = message + "|" + dot + "\0";
 			
 			if (!send_udp(sockfd, message, server_address)){break;}
 
-			if (message == "exit"){break;}
+			if (dot == "exit"){break;}
 			
 			memset(buffer, 0, sizeof(buffer));
 			ssize_t bytes_received = recvfrom(sockfd, buffer, sizeof(buffer), 0, (sockaddr*)&server_address, &addr_len);

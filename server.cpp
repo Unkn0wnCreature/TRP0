@@ -161,6 +161,8 @@ private:
 
 		while (true){
 			memset(buffer, 0, sizeof(buffer));
+
+			
 			
 			char client_ip[INET_ADDRSTRLEN];
 			inet_ntop(AF_INET, &client_address.sin_addr, client_ip, INET_ADDRSTRLEN);
@@ -228,17 +230,19 @@ private:
 			
 			if (!receive_udp(server_fd, buffer, client_address)){break;}
 
-			auto matrix = parse_matrix(buffer);
+			auto [matr, dot] = read_data(buffer);
+
+			auto matrix = parse_matrix(matr);
 				
 			string response;
 
 			if (strncmp(buffer, "exit", 4) == 0){break;}
 
-			memset(buffer, 0, sizeof(buffer));
+			//memset(buffer, 0, sizeof(buffer));
 			
-			if (!receive_udp(server_fd, buffer, client_address)){break;}
+			//if (!receive_udp(server_fd, buffer, client_address)){break;}
 
-			auto [a, b] = get_elements(buffer);
+			auto [a, b] = get_elements(dot);
 			auto [min_dist, path] = dijkstra(matrix, a-1, b-1);
 
 			if (min_dist == INF){
