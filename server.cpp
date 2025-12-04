@@ -99,7 +99,7 @@ private:
 		address.sin_port = htons(port);
 
 		if (bind(server_fd, (sockaddr*) &address, sizeof(address)) < 0){
-			std::cerr<<"Error to bind TCP socket"<<std::endl;
+			std::cerr<<"Error to bind UDP socket"<<std::endl;
 			close(server_fd);
 			return false;
 		}
@@ -154,25 +154,18 @@ private:
 	}
 
 	bool handle_udp_connections(int server_fd){
-		//char buffer[1024];
-		//string welcome = "Соединение с сервером установлено";
+		char buffer[1024];
+		string welcome = "Соединение с сервером установлено";
 		sockaddr_in client_address;
 		socklen_t addr_len = sizeof(client_address);
 
 		while (true){
-			//memset(buffer, 0, sizeof(buffer));
-			//ssize_t bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
-			//if (bytes_received <= 0){break;}
-				
+			memset(buffer, 0, sizeof(buffer));
+			
 			char client_ip[INET_ADDRSTRLEN];
 			inet_ntop(AF_INET, &client_address.sin_addr, client_ip, INET_ADDRSTRLEN);
 
-			//string response;
-			//response += buffer;
-
-			//sendto(server_fd, response.c_str(), response.length(), 0, (sockaddr*)&client_address, addr_len);
-
-			handle_udp_client(server_fd, client_address, client_ip);
+			handle_udp_client(server_fd, client_address, client_ip);		
 		}
 		return true;
 	}
