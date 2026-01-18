@@ -83,6 +83,8 @@ pair<int, int> get_elements(const char* str){
 
 pair<string, string> read_data(char* str){
 	string stri = str;
+
+	if (stri == "exit"){return {"exit", ""};}
 	stringstream ss(stri);
 
 	string  matr, dot;
@@ -95,9 +97,6 @@ pair<string, string> read_data(char* str){
 	while (ss>>c){
 		dot = dot + c;
 	}
-
-	//const char* m = matr.c_str();
-	//const char* d = dot.c_str();
 
 	return {matr, dot};
 }

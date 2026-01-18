@@ -181,13 +181,16 @@ private:
 			memset(buffer, 0, sizeof(buffer));
 			
 			ssize_t bytes_received = recv(client_socket, buffer, 1024, 0);
+			if (bytes_received <= 0 || buffer == "exit"){
+				cout<<"Client disconnected of sent exit"<<endl;
+				break;
+			}
 
 			auto [matr, dot] = read_data(buffer);
 			replace(dot.begin(), dot.end(), '|', ' ');			
 			cout<<matr<<" "<<dot<<endl;
 
 			auto matrix = parse_matrix(matr.c_str());
-			//show_matrix(buffer);
 
 			string response;
 
@@ -219,6 +222,12 @@ private:
 			memset(buffer, 0, sizeof(buffer));
 			
 			ssize_t bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
+			
+			if (bytes_received <= 0 || buffer == "exit"){
+				cout<<"Client disconnectet or sent exit"<<endl;
+				break;
+			}
+
 			auto [matr, dot] = read_data(buffer);
 			replace(dot.begin(), dot.end(), '|', ' ');
 

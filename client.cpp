@@ -112,7 +112,10 @@ private:
 						cout<<"\nГраф должен содержать не менее 6 вершин и 6 рёбер"<<endl;
 						continue;
 					}
-				} else {break;}
+				} else {
+					send_tcp(sockfd, "exit");
+					break;
+				}
 
 				auto current_matrix = parse_matrix(message.c_str());
 
@@ -130,7 +133,10 @@ private:
 						cout<<"\nВершины не найдены в графе\n"<<endl;
 						continue;
 					}
-				} else {break;}
+				} else {
+					send_tcp(sockfd, "exit");
+					break;
+				}
 			} else if (source == "file"){
 				cout<<"\nEnter filename"<<endl;
 				getline(cin, filename);
@@ -152,7 +158,10 @@ private:
 						cout<<"\nГраф должен содержать не менее 6 вершин и 6 рёбер"<<endl;
 						continue;
 					}
-				} else {break;}
+				} else {
+					send_tcp(sockfd, "exit");
+					break;
+				}
 
 				auto current_matrix = parse_matrix(message.c_str());
 
@@ -167,7 +176,13 @@ private:
 						cout<<"\nВершины не найдены в графе\n"<<endl;
 						continue;
 					}
-				} else {break;}
+				} else {
+					send_tcp(sockfd, "exit");
+					break;
+				}
+			} else if (source == "exit"){
+				send_tcp(sockfd, "exit");
+				break;
 			} else {
 				cout<<"\nInvalid source"<<endl;
 				continue;
@@ -222,7 +237,10 @@ private:
 						cout<<"\nГраф должен содержать не менее 6 вершин и 6 рёбер"<<endl;
 						continue;
 					}
-				} else {break;}
+				} else {
+					send_udp(sockfd, "exit", server_address);
+					break;
+				}
 
 				auto current_matrix = parse_matrix(message.c_str());
 
@@ -240,7 +258,10 @@ private:
 						cout<<"\nВершины не найдены в графе\n"<<endl;
 						continue;
 					}
-				} else {break;}
+				} else {
+					send_udp(sockfd, "exit", server_address);
+					break;
+				}
 			} else if (source == "file"){
 				cout<<"\nEnter filename"<<endl;
 				getline(cin, filename);
@@ -262,7 +283,10 @@ private:
 						cout<<"\nГраф должен содержать не менее 6 вершин и 6 рёбер"<<endl;
 						continue;
 					}
-				} else {break;}
+				} else {
+					send_udp(sockfd, "exit", server_address);
+					break;
+				}
 
 				auto current_matrix = parse_matrix(message.c_str());
 
@@ -277,7 +301,13 @@ private:
 						cout<<"\nВершины не найдены в графе\n"<<endl;
 						continue;
 					}
-				} else {break;}
+				} else {
+					send_udp(sockfd, "exit", server_address);
+					break;
+				}
+			} else if (source == "exit"){
+				send_udp(sockfd, "exit", server_address);
+				break;
 			} else {
 				cout<<"\nInvalid source"<<endl;
 				continue;
