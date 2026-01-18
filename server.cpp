@@ -180,21 +180,21 @@ private:
 		while (true){
 			memset(buffer, 0, sizeof(buffer));
 			
-			if (!receive_tcp(client_socket, buffer)){
-				cout<<"error to receive"<<endl;
-				break;
-			}			
+			ssize_t bytes_received = recv(client_socket, buffer, 1024, 0);
 
-			auto matrix = parse_matrix(buffer);
+			auto [matr, dot] = read_data(buffer);
+			replace(dot.begin(), dot.end(), '|', ' ');			
+			cout<<matr<<" "<<dot<<endl;
+
+			auto matrix = parse_matrix(matr.c_str());
+			//show_matrix(buffer);
 
 			string response;
 
 			//------------------------------------------------------------------
 			memset(buffer, 0, sizeof(buffer));
-			if (!receive_tcp(client_socket, buffer)){
-				cout<<"error to receive"<<endl;
-			}			
-			auto [a, b] = get_elements(buffer);
+				
+			auto [a, b] = get_elements(dot.c_str());
 			auto [min_dist, path] = dijkstra(matrix, a-1, b-1);
 
 			if (min_dist == INF){
@@ -202,6 +202,7 @@ private:
 			} else{
 				response = "Результат:  " + convert_len_to_string(min_dist) + "\nКратчайший путь: " + convert_path_to_string(path);
 			}
+			cout<<response<<endl;
 
 			if (!send_tcp(client_socket, response)){
 				cout<<"error to sent"<<endl;
@@ -218,17 +219,13 @@ private:
 			memset(buffer, 0, sizeof(buffer));
 			
 			ssize_t bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
+			auto [matr, dot] = read_data(buffer);
+			replace(dot.begin(), dot.end(), '|', ' ');
 
-			auto matrix = parse_matrix(buffer);
-			//show_matrix(buffer);		
+			auto matrix = parse_matrix(matr.c_str());
 			string response;
 
-			memset(buffer, 0, sizeof(buffer));
-			
-			bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
-
-			auto [a, b] = get_elements(buffer);
-			//cout<<a<<" "<<b<<endl;
+			auto [a, b] = get_elements(dot.c_str());
 			auto [min_dist, path] = dijkstra(matrix, a-1, b-1);
 
 			if (min_dist == INF){

@@ -6,6 +6,7 @@
 #include <iostream>
 #include <cstring>
 #include <string>
+#include <algorithm>
 #include "matrix.h"
 #include "graph.h"
 #include "file_manager.h"
@@ -87,9 +88,9 @@ private:
 		string message, data, source, filename;
 		char buffer[1024];
 		ssize_t bytes_received = recv(sockfd, buffer, sizeof(buffer), 0);
-			if (bytes_received > 0){
-				cout<< buffer <<endl;
-			}
+		if (bytes_received > 0){
+			cout<< buffer <<endl;
+		}
 
 		while (true){
 			cout<<"\nИсточник данных:"<<endl;
@@ -173,29 +174,24 @@ private:
 			}
 			
 			auto current_matrix = parse_matrix(message.c_str());
+			replace(data.begin(), data.end(), ' ', '|');
+			string input = message + "|" + data;
 
-			if (!send_tcp(sockfd, message)){
+			if (!send_tcp(sockfd, input)){
 				cout<<"error to send"<<endl;
 				break;
-			}	
-
-			if (message == "exit"){break;}
+			}
+			cout<<input<<endl;	
 
 			//-------------------------------------------------------------------
-			if (!send_tcp(sockfd, data)){
-				cout<<"error to send"<<endl;
-				break;
-			}	
-			
-			if (data == "exit"){break;}
-			
 			memset(buffer, 0, sizeof(buffer));
 
 			if (!receive_tcp(sockfd, buffer)){
 				cout<<"server disconnected"<<endl;
 			}
 			cout<<"\n"<< buffer <<endl;
-			//bytes_received = recv(sockfd, buffer, sizeof(buffer), 0);
+			
+
 		}	
 	}
 
@@ -288,17 +284,11 @@ private:
 			}
 			
 			auto current_matrix = parse_matrix(message.c_str());
+			replace(data.begin(), data.end(), ' ', '|');
+			string input = message + "|" + data;
 
-			if (!send_udp(sockfd, message, server_address)){break;}
+			if (!send_udp(sockfd, input, server_address)){break;}
 
-			if (message == "exit"){break;}
-
-			//message = message + "|" + dot;
-			
-			if (!send_udp(sockfd, data, server_address)){break;}
-
-			if (data == "exit"){break;}
-			
 			memset(buffer, 0, sizeof(buffer));
 			ssize_t bytes_received = recvfrom(sockfd, buffer, sizeof(buffer), 0, (sockaddr*)&server_address, &addr_len);
 			if (bytes_received <= 0){
