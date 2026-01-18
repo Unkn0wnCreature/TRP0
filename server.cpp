@@ -81,7 +81,7 @@ private:
 			close(server_fd);
 			return false;
 		}
-		
+		cout<<"TCP server launched on port: " << port <<endl;	
 		return handle_tcp_connections(server_fd);
 	}
 
@@ -188,7 +188,6 @@ private:
 
 			auto [matr, dot] = read_data(buffer);
 			replace(dot.begin(), dot.end(), '|', ' ');			
-			cout<<matr<<" "<<dot<<endl;
 
 			auto matrix = parse_matrix(matr.c_str());
 
@@ -205,7 +204,6 @@ private:
 			} else{
 				response = "Результат:  " + convert_len_to_string(min_dist) + "\nКратчайший путь: " + convert_path_to_string(path);
 			}
-			cout<<response<<endl;
 
 			if (!send_tcp(client_socket, response)){
 				cout<<"error to sent"<<endl;

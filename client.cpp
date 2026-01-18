@@ -113,7 +113,6 @@ private:
 						continue;
 					}
 				} else {
-					send_tcp(sockfd, "exit");
 					break;
 				}
 
@@ -134,7 +133,6 @@ private:
 						continue;
 					}
 				} else {
-					send_tcp(sockfd, "exit");
 					break;
 				}
 			} else if (source == "file"){
@@ -159,7 +157,6 @@ private:
 						continue;
 					}
 				} else {
-					send_tcp(sockfd, "exit");
 					break;
 				}
 
@@ -177,11 +174,9 @@ private:
 						continue;
 					}
 				} else {
-					send_tcp(sockfd, "exit");
 					break;
 				}
 			} else if (source == "exit"){
-				send_tcp(sockfd, "exit");
 				break;
 			} else {
 				cout<<"\nInvalid source"<<endl;
@@ -238,7 +233,6 @@ private:
 						continue;
 					}
 				} else {
-					send_udp(sockfd, "exit", server_address);
 					break;
 				}
 
@@ -259,7 +253,6 @@ private:
 						continue;
 					}
 				} else {
-					send_udp(sockfd, "exit", server_address);
 					break;
 				}
 			} else if (source == "file"){
@@ -284,7 +277,6 @@ private:
 						continue;
 					}
 				} else {
-					send_udp(sockfd, "exit", server_address);
 					break;
 				}
 
@@ -302,11 +294,9 @@ private:
 						continue;
 					}
 				} else {
-					send_udp(sockfd, "exit", server_address);
 					break;
 				}
 			} else if (source == "exit"){
-				send_udp(sockfd, "exit", server_address);
 				break;
 			} else {
 				cout<<"\nInvalid source"<<endl;
