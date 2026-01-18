@@ -81,7 +81,7 @@ pair<int, int> get_elements(const char* str){
 	return {a,b};
 }
 
-pair<const char*, const char*> read_data(char* str){
+pair<string, string> read_data(char* str){
 	string stri = str;
 	stringstream ss(stri);
 
@@ -92,12 +92,12 @@ pair<const char*, const char*> read_data(char* str){
 		matr = matr + c;
 	}
 
-	while (ss>>c && c != '\0'){
+	while (ss>>c){
 		dot = dot + c;
 	}
 
-	const char* m = matr.c_str();
-	const char* d = dot.c_str();
+	//const char* m = matr.c_str();
+	//const char* d = dot.c_str();
 
-	return {m, d};
+	return {matr, dot};
 }

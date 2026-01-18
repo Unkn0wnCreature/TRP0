@@ -1,1 +1,1 @@
-g++ client.cpp matrix.h -o client
+g++ client.cpp matrix.h file_manager.h -o client

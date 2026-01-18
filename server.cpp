@@ -162,13 +162,10 @@ private:
 		while (true){
 			memset(buffer, 0, sizeof(buffer));
 
-			if (!receive_udp(server_fd, buffer, client_address)){break;}
-			cout<<buffer<<endl;
-			
 			char client_ip[INET_ADDRSTRLEN];
 			inet_ntop(AF_INET, &client_address.sin_addr, client_ip, INET_ADDRSTRLEN);
 
-			handle_udp_client(server_fd, client_address, client_ip, buffer);		
+			handle_udp_client(server_fd, client_address, client_ip);		
 		}
 		return true;
 	}
@@ -212,38 +209,36 @@ private:
 		}
 	}
 
-	void handle_udp_client(int server_fd, sockaddr_in client_address, char client_ip[INET_ADDRSTRLEN], char buffer[1024]){
+	void handle_udp_client(int server_fd, sockaddr_in client_address, char client_ip[INET_ADDRSTRLEN]){
+		char buffer[1024];
 		string welcome = "Соединение с сервером установлено";
 		socklen_t addr_len = sizeof(client_address);
 
-		//sendto(server_fd, welcome.c_str(), welcome.length(), 0, (sockaddr*)&client_address, addr_len);
-
-		memset(buffer, 0, 1024);
+		while (true){
+			memset(buffer, 0, sizeof(buffer));
 			
-		//if (!receive_udp(server_fd, buffer, client_address)){break;}
+			ssize_t bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
 
-		auto [matr, dot] = read_data(buffer);
+			auto matrix = parse_matrix(buffer);
+			//show_matrix(buffer);		
+			string response;
 
-		auto matrix = parse_matrix(matr);
-				
-		string response;
-
-		//memset(buffer, 0, sizeof(buffer));
+			memset(buffer, 0, sizeof(buffer));
 			
-		//if (!receive_udp(server_fd, buffer, client_address)){break;}
+			bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
 
-		auto [a, b] = get_elements(dot);
-		auto [min_dist, path] = dijkstra(matrix, a-1, b-1);
+			auto [a, b] = get_elements(buffer);
+			//cout<<a<<" "<<b<<endl;
+			auto [min_dist, path] = dijkstra(matrix, a-1, b-1);
 
-		if (min_dist == INF){
-			response = "Пути между вершинами не существует";
-		} else{
-			response = "Результат:  " + convert_len_to_string(min_dist) + "\nКратчайший путь: " + convert_path_to_string(path);
-		}
-
-		if (!send_udp(server_fd, response, client_address)){
-			cout<<"error to send"<<endl;
-		}
+			if (min_dist == INF){
+				response = "Пути между вершинами не существует";
+			} else{
+				response = "Результат:  " + convert_len_to_string(min_dist) + "\nКратчайший путь: " + convert_path_to_string(path);
+			}
+		
+			ssize_t bytes_sent = sendto(server_fd, response.c_str(), response.length(), 0, (sockaddr*)&client_address, addr_len);
+			}
 	}
 
 	bool send_tcp(int sockfd, const string& message){
