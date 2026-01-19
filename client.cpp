@@ -64,6 +64,15 @@ private:
 			return false;
 		}
 
+		struct timeval timeout;
+		timeout.tv_sec = 5;
+		timeout.tv_usec = 0;
+
+		if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0){
+			cout<<"Ошибка присвоения таймаута на получение"<<endl;
+			return false;
+		}
+
 		if (connect(sockfd, (sockaddr*)&server_address, sizeof(server_address)) < 0){
 			cerr<<"Не удалось подключиться к серверу"<<endl;
 			close(sockfd);
@@ -78,6 +87,15 @@ private:
 		sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 		if (sockfd == -1){
 			cerr<<"Error to create UDP socket"<<endl;
+			return false;
+		}
+
+		struct timeval timeout;
+		timeout.tv_sec = 5;
+		timeout.tv_usec = 0;
+
+		if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0){
+			cout<<"Ошибка присвоения таймаута на получение"<<endl;
 			return false;
 		}
 
@@ -198,9 +216,8 @@ private:
 				cout<<"server disconnected"<<endl;
 			}
 			cout<<"\n"<< buffer <<endl;
-			
+		}
 
-		}	
 	}
 
 	void run_udp(){
