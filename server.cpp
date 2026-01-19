@@ -169,12 +169,12 @@ private:
 			memset(buffer, 0, sizeof(buffer));
 			addr_len = sizeof(client_address);
 
-			ssize_t bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
-			if (bytes_received <= 0){
+			//ssize_t bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
+			if (!receive_udp(server_fd, buffer, sizeof(buffer), client_address)){
 				continue;
 			}
 
-			if (bytes_received <= 0 || buffer == "exit"){
+			if (string(buffer) == "exit"){
 				char client_ip[INET_ADDRSTRLEN];
 				inet_ntop(AF_INET, &client_address.sin_addr, client_ip, INET_ADDRSTRLEN);
 				string client_key = string(client_ip) + ":" + to_string(ntohs(client_address.sin_port));

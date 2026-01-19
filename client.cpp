@@ -228,7 +228,7 @@ private:
 		string check = "1";
 		char buffer[1024];
 		socklen_t addr_len = sizeof(server_address);
-		sendto(sockfd, check.c_str(), sizeof(check), 0, (sockaddr*)&server_address, addr_len);
+		if (!send_udp(sockfd, check)){return;}
 		
 		while (true){
 			cout<<"\nИсточник данных:"<<endl;
