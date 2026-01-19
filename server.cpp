@@ -13,6 +13,7 @@
 #include <limits>
 #include <thread>
 #include <mutex>
+#include <map>
 #include "matrix.h"
 #include "graph.h"
 using namespace std;
@@ -24,6 +25,8 @@ private:
 	bool use_tcp;
 	vector<thread> threads;
 	mutex console_mutex;
+	mutex clients_mutex;
+	map<string, bool> active_clients;
 
 	int client_counter = 0;
 	mutex counter_mutex;
@@ -53,13 +56,13 @@ private:
 	bool start_tcp(){
 		int server_fd = socket(AF_INET, SOCK_STREAM, 0);
 		if (server_fd == -1){
-			std::cerr << "Error to create TCP socket" <<std::endl;
+			std::cerr << "Ошибка создания TCP сокета" <<std::endl;
 			return false;
 		}
 
 		int opt = 1;
 		if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))){
-			cerr<<"Error to set options to socket"<<endl;
+			cerr<<"Ошибка установки настроек сокета"<<endl;
 			close(server_fd);
 			return false;
 		}
@@ -71,24 +74,24 @@ private:
 		address.sin_port = htons(port);
 
 		if (bind(server_fd, (sockaddr*) &address, sizeof(address)) < 0){
-			std::cerr<<"Error to bind TCP socket"<<std::endl;
+			std::cerr<<"Ошибка привязки TCP сокета"<<std::endl;
 			close(server_fd);
 			return false;
 		}
 
 		if (listen(server_fd, 5) < 0){
-			std::cerr<<"Error to listen TCP"<<std::endl;
+			std::cerr<<"Ошибка прослушивания TCP"<<std::endl;
 			close(server_fd);
 			return false;
 		}
-		cout<<"TCP server launched on port: " << port <<endl;	
+		cout<<"TCP сервер запущен на порту: " << port <<endl;	
 		return handle_tcp_connections(server_fd);
 	}
 
 	bool start_udp(){
 		int server_fd = socket(AF_INET, SOCK_DGRAM, 0);
 		if (server_fd == -1){
-			std::cerr<<"Error to create UDP socket"<<std::endl;
+			std::cerr<<"Ошибка создания UDP сокета"<<std::endl;
 			return false;
 		}
 
@@ -99,12 +102,12 @@ private:
 		address.sin_port = htons(port);
 
 		if (bind(server_fd, (sockaddr*) &address, sizeof(address)) < 0){
-			std::cerr<<"Error to bind UDP socket"<<std::endl;
+			std::cerr<<"Ошибка привязки UDP сокета"<<std::endl;
 			close(server_fd);
 			return false;
 		}
 		
-		std::cout<< "UDP server launched on port "<< port <<std::endl;
+		std::cout<< "UDP сервер запущен на порту "<< port <<std::endl;
 		return handle_udp_connections(server_fd);
 	}
 
@@ -115,7 +118,7 @@ private:
 		while (true){
 			int client_socket = accept(server_fd, (sockaddr*)&client_address, &addr_len);
 			if (client_socket < 0){
-				std::cerr<<"Error to accept client"<<std::endl;
+				std::cerr<<"Ошибка принятия клиента"<<std::endl;
 				continue;
 			}
 
@@ -161,11 +164,71 @@ private:
 
 		while (true){
 			memset(buffer, 0, sizeof(buffer));
+			addr_len = sizeof(client_address);
+
+			ssize_t bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
+			if (bytes_received <= 0){
+				continue;
+			}
+
+			if (bytes_received <= 0 || buffer == "exit"){
+				char client_ip[INET_ADDRSTRLEN];
+				inet_ntop(AF_INET, &client_address.sin_addr, client_ip, INET_ADDRSTRLEN);
+				string client_key = string(client_ip) + ":" + to_string(ntohs(client_address.sin_port));
+
+				{
+					lock_guard<mutex> lock(clients_mutex);
+					if (active_clients.find(client_key) != active_clients.end()){
+						active_clients.erase(client_key);
+					}
+				}
+				continue;
+			}
 
 			char client_ip[INET_ADDRSTRLEN];
 			inet_ntop(AF_INET, &client_address.sin_addr, client_ip, INET_ADDRSTRLEN);
 
-			handle_udp_client(server_fd, client_address, client_ip);		
+			string client_key = string(client_ip) + ":" + to_string(ntohs(client_address.sin_port));
+
+			{
+				lock_guard<mutex> lock(clients_mutex);
+				if (active_clients.find(client_key) != active_clients.end()){
+					continue;
+				}
+				active_clients[client_key] = true;
+			}
+
+			int current_client_id;
+			{
+				lock_guard<mutex> lock(counter_mutex);
+				current_client_id = ++client_counter;
+			}
+
+			{
+				lock_guard<mutex> lock(console_mutex);
+				cout<<"Подключён UDP клиент " << current_client_id <<" : "<< client_key <<" : " << threads.size() <<" потоков активно"<<endl;
+			}
+
+			{
+				threads.emplace_back([this, server_fd, client_address, client_key, current_client_id](){
+					handle_udp_client(server_fd, client_address, client_key, current_client_id);
+					{
+						lock_guard<mutex> lock(console_mutex);
+						cout<<"Поток для UDP клиента "<< current_client_id <<" завершён"<<endl;
+					}
+
+					{
+						lock_guard<mutex> lock(clients_mutex);
+						active_clients.erase(client_key);
+					}
+				});
+			}
+
+			if (threads.size() > 100){
+				threads.erase(remove_if(threads.begin(), threads.end(), [](const thread& t){
+					return !t.joinable();
+					}), threads.end());
+			}
 		}
 		return true;
 	}
@@ -182,7 +245,7 @@ private:
 			
 			ssize_t bytes_received = recv(client_socket, buffer, 1024, 0);
 			if (bytes_received <= 0 || buffer == "exit"){
-				cout<<"Client disconnected of sent exit"<<endl;
+				cout<<"Клиент отключился"<<endl;
 				break;
 			}
 
@@ -206,12 +269,12 @@ private:
 			}
 
 			if (!send_tcp(client_socket, response)){
-				cout<<"error to sent"<<endl;
+				cout<<"Ошибка отправки данных"<<endl;
 			}
 		}
 	}
 
-	void handle_udp_client(int server_fd, sockaddr_in client_address, char client_ip[INET_ADDRSTRLEN]){
+	void handle_udp_client(int server_fd, sockaddr_in client_address, string client_key, int client_id){
 		char buffer[1024];
 		string welcome = "Соединение с сервером установлено";
 		socklen_t addr_len = sizeof(client_address);
@@ -222,7 +285,7 @@ private:
 			ssize_t bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
 			
 			if (bytes_received <= 0 || buffer == "exit"){
-				cout<<"Client disconnectet or sent exit"<<endl;
+				cout<<"Клиент отключился"<<endl;
 				break;
 			}
 
@@ -283,7 +346,7 @@ int main(int argc, char* argv[]){
 	bool use_tcp = (protocol == "tcp");
 
 	if (!use_tcp && protocol != "udp"){
-		std::cerr<<"Incorrect protocol"<<std::endl;
+		std::cerr<<"Неверный протокол"<<std::endl;
 		return 1;
 	}
 

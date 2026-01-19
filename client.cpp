@@ -191,8 +191,6 @@ private:
 				cout<<"error to send"<<endl;
 				break;
 			}
-			cout<<input<<endl;	
-
 			//-------------------------------------------------------------------
 			memset(buffer, 0, sizeof(buffer));
 
@@ -207,9 +205,10 @@ private:
 
 	void run_udp(){
 		string message, data, source, filename;
+		string check = "1";
 		char buffer[1024];
 		socklen_t addr_len = sizeof(server_address);
-
+		if (!send_udp(sockfd, check, server_address)){return;}
 		
 		while (true){
 			cout<<"\nИсточник данных:"<<endl;
