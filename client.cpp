@@ -20,6 +20,9 @@ private:
 	string server_ip;
 	int port;
 	sockaddr_in server_address;
+
+	const int MAX_RETRIES = 3;
+	const int TIMEOUT_SEC = 3;
 public:
 	Client(const string& ip, int port, bool use_tcp){
 		sockfd = -1;
@@ -225,7 +228,7 @@ private:
 		string check = "1";
 		char buffer[1024];
 		socklen_t addr_len = sizeof(server_address);
-		if (!send_udp(sockfd, check, server_address)){return;}
+		sendto(sockfd, check.c_str(), sizeof(check), 0, (sockaddr*)&server_address, addr_len);
 		
 		while (true){
 			cout<<"\nИсточник данных:"<<endl;
@@ -323,16 +326,21 @@ private:
 			replace(data.begin(), data.end(), ' ', '|');
 			string input = message + "|" + data;
 
-			if (!send_udp(sockfd, input, server_address)){break;}
+			if (!send_udp(sockfd, input)){break;}
 
 			memset(buffer, 0, sizeof(buffer));
+			/*
 			ssize_t bytes_received = recvfrom(sockfd, buffer, sizeof(buffer), 0, (sockaddr*)&server_address, &addr_len);
 			if (bytes_received <= 0){
 				cout<<"error to receive"<<endl;
 				break;
 			} else {
 				cout<<"\n"<< buffer <<endl;
-			}
+			}i
+			*/
+
+			if (!receive_udp(sockfd, buffer, sizeof(buffer))){break;}
+			cout<<"\n"<< buffer <<endl;
 		}
 	}
 
@@ -348,18 +356,52 @@ private:
 		return (bytes_received > 0);
 	}
 	
-	bool send_udp(int sockfd, const string& message, sockaddr_in address){
-		socklen_t addr_len = sizeof(address);
-		ssize_t bytes_sent = sendto(sockfd, message.c_str(), message.length(), 0, (sockaddr*)&address, addr_len);
+	bool send_udp(int sockfd, const string& message){
+		char ask_buffer[10];
+		socklen_t addr_len = sizeof(server_address);
+		for (int attempt = 0; attempt < MAX_RETRIES; attempt++){
+			ssize_t bytes_sent = sendto(sockfd, message.c_str(), message.length(), 0, (sockaddr*)&server_address, addr_len);
+			
+			if (bytes_sent <= 0){
+				cout<<"Ошибка отправки сообщения (попытка "<< (attempt+1) << ")"<<endl;
+				continue;
+			}
 
-		return (bytes_sent > 0);
+			struct timeval timeout;
+			timeout.tv_sec = TIMEOUT_SEC;
+			timeout.tv_usec = 0;
+			setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
+			memset(ask_buffer, 0, sizeof(ask_buffer));
+
+			ssize_t ask_received = recvfrom(sockfd, ask_buffer, sizeof(ask_buffer), 0, (sockaddr*)&server_address, &addr_len);
+
+			timeout.tv_sec = 5;
+			timeout.tv_usec = 0;
+			setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
+			if (ask_received > 0 && string(ask_buffer) == "ASK"){return true;}
+
+			if (attempt < MAX_RETRIES -1){
+				cout<<"Повторная отправка (попытка "<< (attempt+1) <<")"<<endl;
+			}
+		}
+
+		cout<<"Потеряна связь с сервером"<<endl;
+		return false;
 	}
 
-	bool receive_udp(int sockfd, char buffer[1024], sockaddr_in address){
-		socklen_t addr_len = sizeof(address);
-		ssize_t bytes_received = recvfrom(sockfd, buffer, 1024, 0, (sockaddr*)&address, &addr_len);
+	bool receive_udp(int sockfd, char* buffer, size_t buffer_size){
+		socklen_t addr_len = sizeof(server_address);
+		ssize_t bytes_received = recvfrom(sockfd, buffer, buffer_size, 0, (sockaddr*)&server_address, &addr_len);
 
-		return (bytes_received > 0);
+		if (bytes_received > 0){
+			string ask = "ASK";
+			sendto(sockfd, ask.c_str(), ask.length(), 0, (sockaddr*)&server_address, addr_len);
+			return true;
+		}
+
+		return false;
 	}
 
 
