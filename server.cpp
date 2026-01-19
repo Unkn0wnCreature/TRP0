@@ -57,7 +57,7 @@ public:
 
 private:
 	bool start_tcp(){
-		int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+		server_fd = socket(AF_INET, SOCK_STREAM, 0);
 		if (server_fd == -1){
 			std::cerr << "Ошибка создания TCP сокета" <<std::endl;
 			return false;
@@ -92,7 +92,7 @@ private:
 	}
 
 	bool start_udp(){
-		int server_fd = socket(AF_INET, SOCK_DGRAM, 0);
+		server_fd = socket(AF_INET, SOCK_DGRAM, 0);
 		if (server_fd == -1){
 			std::cerr<<"Ошибка создания UDP сокета"<<std::endl;
 			return false;
@@ -169,8 +169,8 @@ private:
 			memset(buffer, 0, sizeof(buffer));
 			addr_len = sizeof(client_address);
 
-			//ssize_t bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
-			if (!receive_udp(server_fd, buffer, sizeof(buffer), client_address)){
+			ssize_t bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
+			if (bytes_received <= 0){
 				continue;
 			}
 
