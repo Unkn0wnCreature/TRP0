@@ -228,7 +228,7 @@ private:
 		string check = "1";
 		char buffer[1024];
 		socklen_t addr_len = sizeof(server_address);
-		ssize_t bytes_sent = sendto(sockfd, check.c_str(), sizeof(check), 0, (sockaddr*)&server_address, addr_len);
+		ssize_t bytes_sent = sendto(sockfd, check.c_str(), check.length(), 0, (sockaddr*)&server_address, addr_len);
 		
 		while (true){
 			cout<<"\nИсточник данных:"<<endl;
@@ -393,6 +393,7 @@ private:
 
 	bool receive_udp(int sockfd, char* buffer, size_t buffer_size){
 		socklen_t addr_len = sizeof(server_address);
+
 		ssize_t bytes_received = recvfrom(sockfd, buffer, buffer_size, 0, (sockaddr*)&server_address, &addr_len);
 
 		if (bytes_received > 0){

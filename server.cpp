@@ -363,6 +363,7 @@ private:
 
 	bool receive_udp(int sockfd, char* buffer, size_t buffer_size, sockaddr_in client_address){
 		socklen_t addr_len = sizeof(client_address);
+
 		ssize_t bytes_received = recvfrom(sockfd, buffer, buffer_size, 0, (sockaddr*)&client_address, &addr_len);
 
 		if (bytes_received > 0){
