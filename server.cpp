@@ -169,26 +169,43 @@ private:
 			memset(buffer, 0, sizeof(buffer));
 			addr_len = sizeof(client_address);
 
+			struct timeval timeout;
+			timeout.tv_sec = 5;
+			timeout.tv_usec = 0;
+			setsockopt(server_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
 			
 			ssize_t bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
-			//receive_udp(server_fd, buffer, sizeof(buffer), client_address);
+			
+			timeout.tv_sec = 0;
+			timeout.tv_usec = 0;
+			setsockopt(server_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
+			
 			if (bytes_received <= 0){
 				continue;
 			}
 
-			if (string(buffer) == "exit"){
-				char client_ip[INET_ADDRSTRLEN];
-				inet_ntop(AF_INET, &client_address.sin_addr, client_ip, INET_ADDRSTRLEN);
-				string client_key = string(client_ip) + ":" + to_string(ntohs(client_address.sin_port));
+			string received_data(buffer, bytes_received);
+			
+			/*
+			char client_ip[INET_ADDRSTRLEN];
+			inet_ntop(AF_INET, &client_address.sin_addr, client_ip, INET_ADDRSTRLEN);
+			string client_key = string(client_ip) + ":" + to_string(ntohs(client_address.sin_port));
 
-				{
-					lock_guard<mutex> lock(clients_mutex);
-					if (active_clients.find(client_key) != active_clients.end()){
-						active_clients.erase(client_key);
-					}
+			{
+				lock_guard<mutex> lock(clients_mutex);
+				if (active_clients.find(client_key) == active_clients.end()){
+					string welcome = "Connection established";
+					sendto(server_fd, welcome.c_str(), welcome.length(), 0, (sockaddr*)&client_address, addr_len);
+					cout<<"Server welcome message to "<< client_key <<endl;
+					active_client[client_key] = true;
+					//active_clients.erase(client_key);
 				}
+			}
 				continue;
 			}
+			*/
 
 			char client_ip[INET_ADDRSTRLEN];
 			inet_ntop(AF_INET, &client_address.sin_addr, client_ip, INET_ADDRSTRLEN);
@@ -198,9 +215,22 @@ private:
 			{
 				lock_guard<mutex> lock(clients_mutex);
 				if (active_clients.find(client_key) != active_clients.end()){
-					continue;
+					string welcome = "Connection established";
+					sendto(server_fd, welcome.c_str(), welcome.length(), 0, (sockaddr*)&client_address, addr_len);
+					cout<<"Server welcome message to "<< client_key <<endl;
+
+					active_clients[client_key] = true;
 				}
-				active_clients[client_key] = true;
+			}
+
+			if (received_data == "1" || received_data == "ASK"){
+				continue;
+			}
+
+			if (received_data == "exit"){
+				lock_guard<mutex> lock(clients_mutex);
+				active_clients.erase(client_key);
+				continue;
 			}
 
 			int current_client_id;
@@ -215,8 +245,13 @@ private:
 			}
 
 			{
-				threads.emplace_back([this, server_fd, client_address, client_key, current_client_id](){
-					handle_udp_client(server_fd, client_address, client_key, current_client_id);
+				threads.emplace_back([this, server_fd, client_address, client_key, current_client_id, received_data](){
+
+					socklen_t addr_len = sizeof(client_address);
+					string ask = "ASK";
+					sendto(server_fd, ask.c_str(), ask.length(), 0, (sockaddr*)&client_address, addr_len);
+
+					handle_udp_client(server_fd, client_address, client_key, current_client_id, received_data);
 					{
 						lock_guard<mutex> lock(console_mutex);
 						cout<<"Поток для UDP клиента "<< current_client_id <<" завершён"<<endl;
@@ -279,10 +314,30 @@ private:
 		}
 	}
 
-	void handle_udp_client(int server_fd, sockaddr_in client_address, string client_key, int client_id){
+	void handle_udp_client(int server_fd, sockaddr_in client_address, string client_key, int client_id, const string& initial_data = ""){
 		char buffer[1024];
 		string welcome = "Соединение с сервером установлено";
 		socklen_t addr_len = sizeof(client_address);
+
+		if (!initial_data.empty()){
+			strcpy(buffer, initial_data.c_str());
+
+			auto [matr, dot] = read_data(buffer);
+			replace(dot.begin(), dot.end(), '|', ' ');
+
+			auto matrix = parse_matrix(matr.c_str());
+			string response;
+
+			auto [a, b] = get_elements(dot.c_str());
+			auto [min_dist, path] = dijkstra(matrix, a-1, b-1);
+
+			if (min_dist == INF){
+				response = "No way";
+			}
+			response = "Result: " + convert_len_to_string(min_dist) + "\nShortest path: " + convert_path_to_string(path);
+
+			send_udp(server_fd, response, client_address);
+		}
 
 		while (true){
 			memset(buffer, 0, sizeof(buffer));

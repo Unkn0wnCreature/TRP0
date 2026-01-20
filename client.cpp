@@ -228,8 +228,27 @@ private:
 		string check = "1";
 		char buffer[1024];
 		socklen_t addr_len = sizeof(server_address);
-		ssize_t bytes_sent = sendto(sockfd, check.c_str(), check.length(), 0, (sockaddr*)&server_address, addr_len);
+		//ssize_t bytes_sent = sendto(sockfd, check.c_str(), check.length(), 0, (sockaddr*)&server_address, addr_len);
 		//send_udp(sockfd, check);
+
+		struct timeval timeout;
+		timeout.tv_sec = 5;
+		timeout.tv_usec = 0;
+		setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
+		memset(buffer, 0, sizeof(buffer));
+		ssize_t bytes_received = recvfrom(sockfd, buffer, sizeof(buffer), 0, (sockaddr*)&server_address, &addr_len);
+
+		timeout.tv_sec = 0;
+		timeout.tv_usec = 0;
+		setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
+		if (bytes_received > 0){
+			cout<<"Server: " << buffer <<endl;
+		} else {
+			cout<<"Welcome message was not received"<<endl;
+		}
+
 		
 		while (true){
 			cout<<"\nИсточник данных:"<<endl;
@@ -381,7 +400,7 @@ private:
 			ssize_t ask_received = recvfrom(sockfd, ask_buffer, sizeof(ask_buffer), 0, (sockaddr*)&server_address, &addr_len);
 			cout<<"Client received: "<<ask_buffer<<endl;;
 
-			if (ask_received > 0 && string(ask_buffer) == "ASK"){
+			if (ask_received > 0){
 				if (string(ask_buffer)== "ASK"){
 					timeout.tv_sec = 0;
 					timeout.tv_usec = 0;
