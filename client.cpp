@@ -231,25 +231,6 @@ private:
 		//ssize_t bytes_sent = sendto(sockfd, check.c_str(), check.length(), 0, (sockaddr*)&server_address, addr_len);
 		//send_udp(sockfd, check);
 
-		struct timeval timeout;
-		timeout.tv_sec = 5;
-		timeout.tv_usec = 0;
-		setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-
-		memset(buffer, 0, sizeof(buffer));
-		ssize_t bytes_received = recvfrom(sockfd, buffer, sizeof(buffer), 0, (sockaddr*)&server_address, &addr_len);
-
-		timeout.tv_sec = 0;
-		timeout.tv_usec = 0;
-		setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-
-		if (bytes_received > 0){
-			cout<<"Server: " << buffer <<endl;
-		} else {
-			cout<<"Welcome message was not received"<<endl;
-		}
-
-		
 		while (true){
 			cout<<"\nИсточник данных:"<<endl;
 			getline(cin, source);
@@ -349,18 +330,18 @@ private:
 			if (!send_udp(sockfd, input)){break;}
 
 			memset(buffer, 0, sizeof(buffer));
-			/*
+			
 			ssize_t bytes_received = recvfrom(sockfd, buffer, sizeof(buffer), 0, (sockaddr*)&server_address, &addr_len);
 			if (bytes_received <= 0){
 				cout<<"error to receive"<<endl;
 				break;
 			} else {
 				cout<<"\n"<< buffer <<endl;
-			}i
-			*/
+			}
+			
 
-			if (!receive_udp(sockfd, buffer, sizeof(buffer))){break;}
-			cout<<"\n"<< buffer <<endl;
+			//if (!receive_udp(sockfd, buffer, sizeof(buffer))){break;}
+			//cout<<"\n"<< buffer <<endl;
 		}
 	}
 
@@ -375,7 +356,8 @@ private:
 
 		return (bytes_received > 0);
 	}
-	
+
+	/*
 	bool send_udp(int sockfd, const string& message){
 		char ask_buffer[10];
 		socklen_t addr_len = sizeof(server_address);
@@ -452,6 +434,26 @@ private:
 			return true;
 		}
 		return false;
+	}
+*/
+
+
+	bool send_udp(int sockfd, const string& message){
+		socklen_t addr_len = sizeof(server_address);
+
+		ssize_t bytes_sent = sendto(sockfd, message.c_str(), message.length(), 0, (sockaddr*)&server_address, addr_len);
+		cout<<"Client sent: "<< message <<endl;
+		return (bytes_sent > 0);
+	}
+
+	
+	bool receive_udp(int sockfd, char* buffer, size_t buffer_size){
+		socklen_t addr_len = sizeof(server_address);
+
+		ssize_t bytes_received = recvfrom(sockfd, buffer, buffer_size, 0, (sockaddr*)&server_address, &addr_len);
+		cout<<"Client received: "<< buffer <<endl;
+
+		return (bytes_received > 0);
 	}
 };
 
