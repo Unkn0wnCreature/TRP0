@@ -168,19 +168,21 @@ private:
 		while (true){
 			memset(buffer, 0, sizeof(buffer));
 
-			//ssize_t bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
-			//receive_udp(server_fd, buffer, sizeof(buffer), client_address);
-			/*
-			if (string(buffer) == "1"){
-				string check = "1";
-				send_udp(server_fd, check, client_address);
-			} else {
-				handle_udp_client(server_fd, client_address);
+			ssize_t bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
+
+			if (bytes_received <= 0){continue;}
+
+			threads.emplace_back([this, server_fd, buffer, bytes_received, client_address](){
+					handle_udp_client(server_fd, buffer, bytes_received, client_address);
+			});
+
+			if (threads.size() > 100){
+				threads.erase(remove_if(threads.begin(), threads.end(),
+							[](const thread& t){
+							return !t.joinable();
+							}),
+						threads.end());
 			}
-			*/
-			
-			//return true;
-			handle_udp_client(server_fd, client_address);
 		}
 		return true;
 	}
@@ -226,41 +228,35 @@ private:
 		}
 	}
 
-	void handle_udp_client(int server_fd, sockaddr_in client_address){
+	void handle_udp_client(int server_fd, const char* buffer_data, ssize_t data_size, sockaddr_in client_address){
 		char buffer[1024];
 		string welcome = "Соединение с сервером установлено";
 		socklen_t addr_len = sizeof(client_address);
 
-		while (true){
-			memset(buffer, 0, sizeof(buffer));
+		memset(buffer, 0, sizeof(buffer));
 			
-			//if (!receive_udp(server_fd, buffer, sizeof(buffer), client_address)){continue;}
-			ssize_t bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
-
-			if (string(buffer) == "exit"){
-				cout<<"Клиент отключился"<<endl;
-				break;
-			}
-
-			auto [matr, dot] = read_data(buffer);
-			replace(dot.begin(), dot.end(), '|', ' ');
-
-			auto matrix = parse_matrix(matr.c_str());
-			string response;
-
-			auto [a, b] = get_elements(dot.c_str());
-			auto [min_dist, path] = dijkstra(matrix, a-1, b-1);
-
-			if (min_dist == INF){
-				response = "Пути между вершинами не существует";
-			} else{
-				response = "Результат:  " + convert_len_to_string(min_dist) + "\nКратчайший путь: " + convert_path_to_string(path);
-			}
-		
-			//ssize_t bytes_sent = sendto(server_fd, response.c_str(), response.length(), 0, (sockaddr*)&client_address, addr_len);
-			//if (!send_udp(server_fd, response, client_address)){break;}
-			ssize_t bytes_sent = sendto(server_fd, response.c_str(), response.length(), 0, (sockaddr*)&client_address, addr_len);
+		if (string(buffer) == "exit" || data_size <= 0){
+			cout<<"Клиент отключился"<<endl;
+			return;
 		}
+
+		auto [matr, dot] = read_data(buffer);
+		replace(dot.begin(), dot.end(), '|', ' ');
+
+		auto matrix = parse_matrix(matr.c_str());
+		string response;
+
+		auto [a, b] = get_elements(dot.c_str());
+		auto [min_dist, path] = dijkstra(matrix, a-1, b-1);
+
+		if (min_dist == INF){
+			response = "Пути между вершинами не существует";
+		} else{
+			response = "Результат:  " + convert_len_to_string(min_dist) + "\nКратчайший путь: " + convert_path_to_string(path);
+		}
+		
+		ssize_t bytes_sent = sendto(server_fd, response.c_str(), response.length(), 0, (sockaddr*)&client_address, addr_len);
+
 	}
 
 	bool send_tcp(int sockfd, const string& message){
