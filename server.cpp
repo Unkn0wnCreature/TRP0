@@ -167,14 +167,20 @@ private:
 
 		while (true){
 			memset(buffer, 0, sizeof(buffer));
-			addr_len = sizeof(client_address);
 
 			//ssize_t bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
 			//receive_udp(server_fd, buffer, sizeof(buffer), client_address);
-
-			handle_udp_client(server_fd, client_address);
+			/*
+			if (string(buffer) == "1"){
+				string check = "1";
+				send_udp(server_fd, check, client_address);
+			} else {
+				handle_udp_client(server_fd, client_address);
+			}
+			*/
 			
 			//return true;
+			handle_udp_client(server_fd, client_address);
 		}
 		return true;
 	}
@@ -228,7 +234,8 @@ private:
 		while (true){
 			memset(buffer, 0, sizeof(buffer));
 			
-			if (!receive_udp(server_fd, buffer, sizeof(buffer), client_address)){continue;}
+			//if (!receive_udp(server_fd, buffer, sizeof(buffer), client_address)){continue;}
+			ssize_t bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
 
 			if (string(buffer) == "exit"){
 				cout<<"Клиент отключился"<<endl;
@@ -251,7 +258,8 @@ private:
 			}
 		
 			//ssize_t bytes_sent = sendto(server_fd, response.c_str(), response.length(), 0, (sockaddr*)&client_address, addr_len);
-			if (!send_udp(server_fd, response, client_address)){break;}
+			//if (!send_udp(server_fd, response, client_address)){break;}
+			ssize_t bytes_sent = sendto(server_fd, response.c_str(), response.length(), 0, (sockaddr*)&client_address, addr_len);
 		}
 	}
 

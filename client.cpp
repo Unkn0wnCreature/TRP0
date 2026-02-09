@@ -230,6 +230,8 @@ private:
 		socklen_t addr_len = sizeof(server_address);
 		//ssize_t bytes_sent = sendto(sockfd, check.c_str(), check.length(), 0, (sockaddr*)&server_address, addr_len);
 		//send_udp(sockfd, check);
+		//sleep(1);
+		//receive_udp(sockfd, buffer, sizeof(buffer));
 
 		while (true){
 			cout<<"\nИсточник данных:"<<endl;
@@ -327,9 +329,11 @@ private:
 			replace(data.begin(), data.end(), ' ', '|');
 			string input = message + "|" + data;
 
-			if (!send_udp(sockfd, input)){break;}
+			//if (!send_udp(sockfd, input)){break;}
+			ssize_t bytes_sent = sendto(sockfd, message.c_str(), message.length(), 0, (sockaddr*)&server_address, addr_len);
 
 			memset(buffer, 0, sizeof(buffer));
+		
 			
 			ssize_t bytes_received = recvfrom(sockfd, buffer, sizeof(buffer), 0, (sockaddr*)&server_address, &addr_len);
 			if (bytes_received <= 0){
@@ -338,7 +342,7 @@ private:
 			} else {
 				cout<<"\n"<< buffer <<endl;
 			}
-			
+		
 
 			//if (!receive_udp(sockfd, buffer, sizeof(buffer))){break;}
 			//cout<<"\n"<< buffer <<endl;
