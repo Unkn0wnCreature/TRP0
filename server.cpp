@@ -164,13 +164,23 @@ private:
 		string welcome = "Соединение с сервером установлено";
 		sockaddr_in client_address;
 		socklen_t addr_len = sizeof(client_address);
+		ssize_t bytes_sent, bytes_received;
 
 		while (true){
 			memset(buffer, 0, sizeof(buffer));
 
-			ssize_t bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
+			receive_udp(server_fd, buffer, sizeof(buffer), client_address);
+
+		/*
+			bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
 
 			if (bytes_received <= 0){continue;}
+			else {
+				string ack = "ACK";	
+				bytes_sent = sendto(server_fd, ack.c_str(), ack.length(), 0, (sockaddr*)&client_address, addr_len);
+				cout<<"ACK sent"<<endl;
+			}
+		*/
 
 			threads.emplace_back([this, server_fd, buffer, bytes_received, client_address](){
 					handle_udp_client(server_fd, buffer, bytes_received, client_address);
@@ -231,9 +241,10 @@ private:
 	void handle_udp_client(int server_fd, const char* buffer_data, ssize_t data_size, sockaddr_in client_address){
 		char buffer[1024];
 		string welcome = "Соединение с сервером установлено";
+		ssize_t bytes_sent, bytes_received;
 		socklen_t addr_len = sizeof(client_address);
 
-		memset(buffer, 0, sizeof(buffer));
+		strncpy(buffer, buffer_data, min((size_t)data_size, sizeof(buffer)));
 			
 		if (string(buffer) == "exit" || data_size <= 0){
 			cout<<"Клиент отключился"<<endl;
@@ -254,8 +265,30 @@ private:
 		} else{
 			response = "Результат:  " + convert_len_to_string(min_dist) + "\nКратчайший путь: " + convert_path_to_string(path);
 		}
+
+		send_udp(server_fd, response, client_address);
 		
-		ssize_t bytes_sent = sendto(server_fd, response.c_str(), response.length(), 0, (sockaddr*)&client_address, addr_len);
+	/*	
+		for (int attempt = 1; attempt <= 3; attempt++){
+			bytes_sent = sendto(server_fd, response.c_str(), response.length(), 0, (sockaddr*)&client_address, addr_len);
+			
+			if (bytes_sent <= 0){
+				cout<<"Error to sent (attempt "<< (attempt)<<")"<<endl;
+				continue;
+			}
+			
+			memset(buffer, 0, sizeof(buffer));
+
+			bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
+
+			if (bytes_received <= 0 || buffer != "ACK"){
+				cout<<"ACK no received (attempt "<<(attempt)<<")"<<endl;
+				continue;
+			}		
+			
+			//if (attempt == 3){cout<<"Client disconnected"<<endl;}
+		}
+	*/
 
 	}
 
@@ -271,10 +304,11 @@ private:
 		return (bytes_received > 0);
 	}
 	
-	/*	
+		
 	bool send_udp(int sockfd, const string& message, sockaddr_in client_address){
-		char ask_buffer[10];
+		char ack_buffer[10];
 		socklen_t addr_len = sizeof(client_address);
+		ssize_t bytes_sent, ack_received;
 		
 		struct timeval timeout;
 		timeout.tv_sec = TIMEOUT_SEC;
@@ -282,7 +316,7 @@ private:
 		setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 
 		for (int attempt = 0; attempt < MAX_RETRIES; attempt++){
-			ssize_t bytes_sent = sendto(sockfd, message.c_str(), message.length(), 0, (sockaddr*)&client_address, addr_len);
+			bytes_sent = sendto(sockfd, message.c_str(), message.length(), 0, (sockaddr*)&client_address, addr_len);
 			cout<<"Server sent: "<<message<<endl;
 
 			if (bytes_sent <= 0){
@@ -290,17 +324,17 @@ private:
 				continue;
 			}
 
-			memset(ask_buffer, 0, sizeof(ask_buffer));
+			memset(ack_buffer, 0, sizeof(ack_buffer));
 			//sleep(1);
-			ssize_t ask_received = recvfrom(sockfd, ask_buffer, sizeof(ask_buffer), 0, (sockaddr*)&client_address, &addr_len);
-			cout<<"Server received: "<<ask_buffer<<endl;
+			ack_received = recvfrom(sockfd, ack_buffer, sizeof(ack_buffer), 0, (sockaddr*)&client_address, &addr_len);
+			cout<<"Server received: "<<ack_buffer<<endl;
 
 			timeout.tv_sec = 0;
 			timeout.tv_usec = 0;
 			setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 
-			if (ask_received > 0){
-				if (string(ask_buffer) == "ASK"){
+			if (ack_received > 0){
+				if (string(ack_buffer) == "ASK"){
 					timeout.tv_sec = 0;
 					timeout.tv_usec = 0;
 					setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
@@ -326,6 +360,7 @@ private:
 
 	bool receive_udp(int sockfd, char* buffer, size_t buffer_size, sockaddr_in client_address){
 		socklen_t addr_len = sizeof(client_address);
+		ssize_t bytes_received, ack_sent;
 
 		struct timeval original_timeout, timeout;
 		timeout.tv_sec = 2;
@@ -333,7 +368,7 @@ private:
 		setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 		sleep(1);
 
-		ssize_t bytes_received = recvfrom(sockfd, buffer, buffer_size, 0, (sockaddr*)&client_address, &addr_len);
+		bytes_received = recvfrom(sockfd, buffer, buffer_size, 0, (sockaddr*)&client_address, &addr_len);
 		cout<<"Server received: "<<buffer<<endl;
 
 		//setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &original_timeout, sizeof(original_timeout));
@@ -342,32 +377,14 @@ private:
 		setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 
 		if (bytes_received > 0){
-			string ask = "ASK";
-			sendto(sockfd, ask.c_str(), ask.length(), 0, (sockaddr*)&client_address, addr_len);
-			cout<<"Server sent: "<<ask<<endl;
+			string ack = "ASK";
+			ack_sent = sendto(sockfd, ack.c_str(), ack.length(), 0, (sockaddr*)&client_address, addr_len);
+			cout<<"Server sent: "<<ack<<endl;
 			return true;
 		}
 		return false;
 	}
-*/
 
-
-	bool send_udp(int sockfd, const string& message, sockaddr_in client_address){
-		socklen_t addr_len = sizeof(client_address);
-
-		ssize_t bytes_sent = sendto(sockfd, message.c_str(), message.length(), 0, (sockaddr*)&client_address, addr_len);
-		cout<<"Server sent: "<< message <<endl;
-		return (bytes_sent > 0);
-	}
-
-	bool receive_udp(int sockfd, char* buffer, size_t buffer_size, sockaddr_in client_address){
-		socklen_t addr_len = sizeof(client_address);
-
-		ssize_t bytes_received = recvfrom(sockfd, buffer, buffer_size, 0, (sockaddr*)&client_address, &addr_len);
-		cout<<"Server received: "<< buffer <<endl;
-
-		return (bytes_received > 0);
-	}
 };
 
 int main(int argc, char* argv[]){
