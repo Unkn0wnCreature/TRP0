@@ -326,12 +326,12 @@ private:
 			replace(data.begin(), data.end(), ' ', '|');
 			string input = message + "|" + data;
 
-			send_udp(sockfd, input);
+			//send_udp(sockfd, input);
 
-			/*
 			for (int attempt = 1; attempt <= 3; attempt++)	{
 
 				bytes_sent = sendto(sockfd, input.c_str(), input.length(), 0, (sockaddr*)&server_address, addr_len);
+				cout<<"Client sent: "<<input<<endl;
 
 				if (bytes_sent <= 0){continue;}
 
@@ -342,24 +342,24 @@ private:
 				if (bytes_received <= 0 || string(buffer) != "ACK"){
 					cout<<"ACK not received"<<endl;
 					continue;
+				} else {
+					cout<<"Client received: "<<buffer<<endl;
+					break;
 				}
-
-				//if (attempt == 3){cout<<"Server disconnected"<<endl;}
 			}
-			*/
 
 			memset(buffer, 0, sizeof(buffer));
 
-			receive_udp(sockfd, buffer, sizeof(buffer));
+			//receive_udp(sockfd, buffer, sizeof(buffer));
 		
-			/*
 			bytes_received = recvfrom(sockfd, buffer, sizeof(buffer), 0, (sockaddr*)&server_address, &addr_len);
+			cout<<"Client received: "<<buffer<<endl;
 			if (bytes_received > 0){
 				string ack = "ACK";	
 				bytes_sent = sendto(sockfd, ack.c_str(), ack.length(), 0, (sockaddr*)&server_address, addr_len);
+				cout<<"Client sent: "<<ack<<endl;
 				cout<<"\n"<< buffer <<endl;
-			}
-			*/	
+			}	
 		}
 	}
 

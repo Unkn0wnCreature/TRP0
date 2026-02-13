@@ -169,18 +169,18 @@ private:
 		while (true){
 			memset(buffer, 0, sizeof(buffer));
 
-			receive_udp(server_fd, buffer, sizeof(buffer), client_address);
+			//receive_udp(server_fd, buffer, sizeof(buffer), client_address);
 
-		/*
+		
 			bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
+			cout<<"Server received: "<<buffer<<endl;
 
-			if (bytes_received <= 0){continue;}
+			if (bytes_received <= 0 || string(buffer) == "ACK"){continue;}
 			else {
 				string ack = "ACK";	
 				bytes_sent = sendto(server_fd, ack.c_str(), ack.length(), 0, (sockaddr*)&client_address, addr_len);
-				cout<<"ACK sent"<<endl;
+				cout<<"Server sent: "<<ack<<endl;
 			}
-		*/
 
 			threads.emplace_back([this, server_fd, buffer, bytes_received, client_address](){
 					handle_udp_client(server_fd, buffer, bytes_received, client_address);
@@ -266,11 +266,11 @@ private:
 			response = "Результат:  " + convert_len_to_string(min_dist) + "\nКратчайший путь: " + convert_path_to_string(path);
 		}
 
-		send_udp(server_fd, response, client_address);
-		
-	/*	
+		//send_udp(server_fd, response, client_address);
+			
 		for (int attempt = 1; attempt <= 3; attempt++){
 			bytes_sent = sendto(server_fd, response.c_str(), response.length(), 0, (sockaddr*)&client_address, addr_len);
+			cout<<"Server sent 123: "<<response<<endl;
 			
 			if (bytes_sent <= 0){
 				cout<<"Error to sent (attempt "<< (attempt)<<")"<<endl;
@@ -284,12 +284,11 @@ private:
 			if (bytes_received <= 0 || buffer != "ACK"){
 				cout<<"ACK no received (attempt "<<(attempt)<<")"<<endl;
 				continue;
+			} else {
+				cout<<"Server received: "<<buffer<<endl;
+				break;
 			}		
-			
-			//if (attempt == 3){cout<<"Client disconnected"<<endl;}
 		}
-	*/
-
 	}
 
 	bool send_tcp(int sockfd, const string& message){
