@@ -184,6 +184,8 @@ private:
 
 			threads.emplace_back([this, server_fd, buffer, bytes_received, client_address](){
 					handle_udp_client(server_fd, buffer, bytes_received, client_address);
+					cout<<endl;
+					cout<<endl;
 			});
 
 			if (threads.size() > 100){
@@ -267,7 +269,7 @@ private:
 		}
 
 		//send_udp(server_fd, response, client_address);
-			
+		
 		for (int attempt = 1; attempt <= 3; attempt++){
 			bytes_sent = sendto(server_fd, response.c_str(), response.length(), 0, (sockaddr*)&client_address, addr_len);
 			cout<<"Server sent 123: "<<response<<endl;
@@ -281,13 +283,13 @@ private:
 
 			bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
 
-			if (bytes_received <= 0 || buffer != "ACK"){
-				cout<<"ACK no received (attempt "<<(attempt)<<")"<<endl;
-				continue;
-			} else {
+			if (bytes_received > 0 && buffer == "ACK"){
 				cout<<"Server received: "<<buffer<<endl;
 				break;
-			}		
+			} else {
+				cout<<"ACK no received (attempt "<<(attempt)<<")"<<endl;
+				continue;
+			}
 		}
 	}
 
