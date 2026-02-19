@@ -169,22 +169,21 @@ private:
 		while (true){
 			memset(buffer, 0, sizeof(buffer));
 
-			//receive_udp(server_fd, buffer, sizeof(buffer), client_address);
-
-		
 			bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
-			//cout<<"\nServer received: "<<buffer<<endl;
 
 			if (bytes_received <= 0 || string(buffer) == "ACK"){continue;}
-			else {cout<<"\nServer received: "<<buffer<<endl;};
+			
+			cout<<"\nServer received: "<<buffer<<endl;
 			
 			string ack = "ACK";	
 			bytes_sent = sendto(server_fd, ack.c_str(), ack.length(), 0, (sockaddr*)&client_address, addr_len);
 			cout<<"Server sent: "<<ack<<endl;
 
+			char data_copy[1024];
+			strcpy(data_copy, buffer);
 
-			threads.emplace_back([this, server_fd, buffer, bytes_received, client_address](){
-					handle_udp_client(server_fd, buffer, bytes_received, client_address);
+			threads.emplace_back([this, server_fd, data_copy, bytes_received, client_address](){
+					handle_udp_client(server_fd, data_copy, bytes_received, client_address);
 					});
 
 			if (threads.size() > 100){
@@ -272,8 +271,6 @@ private:
 			response = "Результат:  " + convert_len_to_string(min_dist) + "\nКратчайший путь: " + convert_path_to_string(path);
 		}
 
-		//send_udp(server_fd, response, client_address);
-		
 		for (int attempt = 1; attempt <= 3; attempt++){
 			bytes_sent = sendto(server_fd, response.c_str(), response.length(), 0, (sockaddr*)&client_address, addr_len);
 			cout<<"Server sent 123: "<<response<<endl;
@@ -285,7 +282,17 @@ private:
 			
 			memset(buffer, 0, sizeof(buffer));
 
+			struct timeval timeout;
+			timeout.tv_sec = 3;
+			timeout.tv_usec = 0;
+			setsockopt(server_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
 			bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
+
+			timeout.tv_sec = 0;
+			timeout.tv_usec = 0;
+			setsockopt(server_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
 
 			if (bytes_received > 0 && string(buffer) == "ACK"){
 				cout<<"Server received (ACK): "<<buffer<<endl;
