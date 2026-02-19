@@ -337,17 +337,8 @@ private:
 
 				memset(buffer, 0, sizeof(buffer));
 
-				struct timeval timeout;
-				timeout.tv_sec = 3;
-				timeout.tv_usec = 0;
-				setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-
 				bytes_received = recvfrom(sockfd, buffer, sizeof(buffer), 0, (sockaddr*)&server_address, &addr_len);
 				
-				timeout.tv_sec = 0;
-				timeout.tv_usec = 0;
-				setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-
 				if (bytes_received > 0 && string(buffer) == "ACK"){
 					cout<<"Client received: "<<buffer<<endl;
 					data_sent = true;

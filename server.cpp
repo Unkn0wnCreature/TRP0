@@ -14,6 +14,7 @@
 #include <thread>
 #include <mutex>
 #include <map>
+#include <chrono>
 #include "matrix.h"
 #include "graph.h"
 using namespace std;
@@ -273,6 +274,7 @@ private:
 
 		for (int attempt = 1; attempt <= 3; attempt++){
 			bytes_sent = sendto(server_fd, response.c_str(), response.length(), 0, (sockaddr*)&client_address, addr_len);
+			auto start = chrono::steady_clock::now();
 			cout<<"Server sent 123: "<<response<<endl;
 			
 			if (bytes_sent <= 0){
@@ -282,19 +284,14 @@ private:
 			
 			memset(buffer, 0, sizeof(buffer));
 
-			struct timeval timeout;
-			timeout.tv_sec = 3;
-			timeout.tv_usec = 0;
-			setsockopt(server_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-
 			bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
 
-			timeout.tv_sec = 0;
-			timeout.tv_usec = 0;
-			setsockopt(server_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+			auto end = chrono::steady_clock::now();
+			auto diff = end - start;
+			cout<<"Time taken: "<<chrono::duration_cast<chrono::milliseconds>(diff).count()<<endl;
+			if (chrono::duration_cast<chrono::milliseconds>(diff).count() >= 3000){continue;}
 
-
-			if (bytes_received > 0 && string(buffer) == "ACK"){
+			if (bytes_received > 0 || string(buffer) == "ACK"){
 				cout<<"Server received (ACK): "<<buffer<<endl;
 				break;
 			} else {
