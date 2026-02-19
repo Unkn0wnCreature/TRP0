@@ -173,20 +173,19 @@ private:
 
 		
 			bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
-			cout<<"Server received: "<<buffer<<endl;
+			//cout<<"\nServer received: "<<buffer<<endl;
 
 			if (bytes_received <= 0 || string(buffer) == "ACK"){continue;}
-			else {
-				string ack = "ACK";	
-				bytes_sent = sendto(server_fd, ack.c_str(), ack.length(), 0, (sockaddr*)&client_address, addr_len);
-				cout<<"Server sent: "<<ack<<endl;
-			}
+			else {cout<<"\nServer received: "<<buffer<<endl;};
+			
+			string ack = "ACK";	
+			bytes_sent = sendto(server_fd, ack.c_str(), ack.length(), 0, (sockaddr*)&client_address, addr_len);
+			cout<<"Server sent: "<<ack<<endl;
+
 
 			threads.emplace_back([this, server_fd, buffer, bytes_received, client_address](){
 					handle_udp_client(server_fd, buffer, bytes_received, client_address);
-					cout<<endl;
-					cout<<endl;
-			});
+					});
 
 			if (threads.size() > 100){
 				threads.erase(remove_if(threads.begin(), threads.end(),
@@ -253,6 +252,11 @@ private:
 			return;
 		}
 
+		if (string(buffer) == "ACK"){
+			cout<<"Acknowledgement received"<<endl;
+			return;
+		}
+
 		auto [matr, dot] = read_data(buffer);
 		replace(dot.begin(), dot.end(), '|', ' ');
 
@@ -283,8 +287,8 @@ private:
 
 			bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
 
-			if (bytes_received > 0 && buffer == "ACK"){
-				cout<<"Server received: "<<buffer<<endl;
+			if (bytes_received > 0 && string(buffer) == "ACK"){
+				cout<<"Server received (ACK): "<<buffer<<endl;
 				break;
 			} else {
 				cout<<"ACK no received (attempt "<<(attempt)<<")"<<endl;

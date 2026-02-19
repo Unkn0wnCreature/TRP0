@@ -364,6 +364,7 @@ private:
 				bytes_sent = sendto(sockfd, ack.c_str(), ack.length(), 0, (sockaddr*)&server_address, addr_len);
 				cout<<"Client sent: "<<ack<<endl;
 				cout<<"\n"<< buffer <<endl;
+				memset(buffer, 0, sizeof(buffer));
 			} else {
 				cout<<"unavle to receive result from server"<<endl;
 			}	
