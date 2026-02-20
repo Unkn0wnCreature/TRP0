@@ -244,7 +244,12 @@ private:
 		string welcome = "Соединение с сервером установлено";
 		ssize_t bytes_sent;
 		ssize_t bytes_received;
-		socklen_t addr_len = sizeof(client_address);
+
+		sockaddr_in target_client = client_address;
+		socklen_t target_len = sizeof(target_client);
+
+		sockaddr_in temp_addr;
+		socklen_t temp_len = sizeof(temp_addr);
 
 		strncpy(buffer, buffer_data, min((size_t)data_size, sizeof(buffer)));
 			
@@ -275,7 +280,7 @@ private:
 
 		bool result_sent = false;
 		for (int attempt = 1; attempt <= 3; attempt++){
-			bytes_sent = sendto(server_fd, response.c_str(), response.length(), 0, (sockaddr*)&client_address, addr_len);
+			bytes_sent = sendto(server_fd, response.c_str(), response.length(), 0, (sockaddr*)&target_client, target_len);
 			cout<<"Server sent (response): "<<response<<endl;
 			
 			if (bytes_sent <= 0){
@@ -298,13 +303,10 @@ private:
 				if (FD_ISSET(server_fd, &readfds)){
 					memset(buffer, 0, sizeof(buffer));
 				
-					sockaddr_in temp_addr;
-					socklen_t temp_len = sizeof(temp_addr);
-				
-					bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
+					bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&temp_addr, &temp_len);
 					if (bytes_received > 0){
 						cout<<"Server received (test): "<<buffer<<endl;
-						if (string(buffer) == "ACK" && temp_addr.sin_addr.s_addr == client_address.sin_addr.s_addr && temp_addr.sin_port == client_address.sin_port){	
+						if (string(buffer) == "ACK" && temp_addr.sin_addr.s_addr == target_client.sin_addr.s_addr && temp_addr.sin_port == target_client.sin_port){	
 							cout<<"Server received (ACK): "<<buffer<<endl;
 							result_sent = true;
 							break;
