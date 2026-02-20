@@ -360,9 +360,7 @@ private:
 				cout<<"Client received (result): "<<buffer<<endl;
 				string ack = "ACK";
 				//usleep(10000);
-				do{	
-					bytes_sent = sendto(sockfd, ack.c_str(), ack.length(), 0, (sockaddr*)&server_address, addr_len);
-				} while (bytes_sent <= 0);
+				bytes_sent = sendto(sockfd, ack.c_str(), ack.length(), 0, (sockaddr*)&server_address, addr_len);
 				cout<<"Client sent (ACK): "<<ack<<endl;
 				cout<<"\n"<< buffer <<endl;
 				//memset(buffer, 0, sizeof(buffer));

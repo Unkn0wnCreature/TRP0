@@ -174,7 +174,7 @@ private:
 
 			if (bytes_received <= 0 || string(buffer) == "ACK"){continue;}
 			
-			cout<<"\nServer received: "<<buffer<<endl;
+			cout<<"\nServer received (matrix): "<<buffer<<endl;
 			
 			string ack = "ACK";	
 			bytes_sent = sendto(server_fd, ack.c_str(), ack.length(), 0, (sockaddr*)&client_address, addr_len);
@@ -299,13 +299,11 @@ private:
 
 			int select_result = select(server_fd + 1, &readfds, NULL, NULL, &timeout);
 
-			if (select_result >= 0){
+			if (select_result > 0){
 				if (FD_ISSET(server_fd, &readfds)){
 					memset(buffer, 0, sizeof(buffer));
 
-					do{
 					bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&temp_addr, &temp_len);
-					} while (bytes_received <= 0);
 
 					if (bytes_received > 0){
 						cout<<"Server received (test): "<<buffer<<endl;
@@ -324,7 +322,6 @@ private:
 			} else {
 				cout<<"Select error"<<endl;
 			}
-			timeout.tv_sec = 0;
 		}
 
 		if (!result_sent){
