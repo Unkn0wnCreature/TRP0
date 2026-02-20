@@ -350,18 +350,20 @@ private:
 
 			if (!data_sent){
 				cout<<"Unable to sent data on server"<<endl;
-				continue;
+				break;
 			}
 
 			memset(buffer, 0, sizeof(buffer));
 
 			bytes_received = recvfrom(sockfd, buffer, sizeof(buffer), 0, (sockaddr*)&server_address, &addr_len);
-			if (bytes_received > 0){
-				cout<<"Client received: "<<buffer<<endl;
+			if (bytes_received > 0 && string(buffer) != "ACK"){
+				cout<<"Client received (result): "<<buffer<<endl;
 				string ack = "ACK";
-				//sleep(1);	
-				bytes_sent = sendto(sockfd, ack.c_str(), ack.length(), 0, (sockaddr*)&server_address, addr_len);
-				cout<<"Client sent: "<<ack<<endl;
+				//usleep(10000);
+				do{	
+					bytes_sent = sendto(sockfd, ack.c_str(), ack.length(), 0, (sockaddr*)&server_address, addr_len);
+				} while (bytes_sent <= 0);
+				cout<<"Client sent (ACK): "<<ack<<endl;
 				cout<<"\n"<< buffer <<endl;
 				//memset(buffer, 0, sizeof(buffer));
 			} else {
