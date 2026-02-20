@@ -14,7 +14,7 @@
 #include <thread>
 #include <mutex>
 #include <map>
-#include <chrono>
+#include <sys/select.h>
 #include "matrix.h"
 #include "graph.h"
 using namespace std;
@@ -287,32 +287,44 @@ private:
 				cout<<"Error to sent (attempt "<< (attempt)<<")"<<endl;
 				continue;
 			}
+
+			fd_set readfds;
+			FD_ZERO(&readfds);
+			FD_SET(server_fd, &readfds);
 			
-			memset(buffer, 0, sizeof(buffer));
-			cout<<"Marker point 1"<<endl;
+			struct timeval timeout;
+			timeout.tv_sec = 3;
+			timeout.tv_usec = 0;
+			setsockopt(server_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 
-			bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
+			int select_result = select(server_fd + 1, &readfds, NULL, NULL, &timeout);
 
-			cout<<"marker point 2"<<endl;
+			if (FD_ISSET(server_fd, &readfds)){
+				memset(buffer, 0, sizeof(buffer));
+				
+				sockaddr_in temp_addr;
+				socklen_t temp_len = sizeof(temp_addr);
+				
+				bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
 
-			if (bytes_received >= 0 && string(buffer) == "ACK"){
+				if (bytes_received > 0 && string(buffer) == "ACK" && temp_addr.sin_addr.s_addr == client_address.sin_addr.s_addr && temp_addr.sin_port == client_address.sin_port){	
 				cout<<"Server received (ACK): "<<buffer<<endl;
 				result_sent = true;
 				break;
-			} else {
+				} else {
 				cout<<"ACK no received (attempt "<<(attempt)<<")"<<endl;
-				//continue;
+				}
 			}
+			
+			timeout.tv_sec = 0;
+			setsockopt(server_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+			
+			cout<<"marker point 2"<<endl;
 		}
 
-		if (result_sent){
+		if (!result_sent){
 			cout<<"Unable to confirm sending"<<endl;
 		}
-
-		//timeout.tv_sec = 0;
-		//timeout.tv_usec = 0;
-		//setsockopt(server_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-
 	}
 
 	bool send_tcp(int sockfd, const string& message){

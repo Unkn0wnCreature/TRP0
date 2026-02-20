@@ -359,7 +359,7 @@ private:
 			if (bytes_received > 0){
 				cout<<"Client received: "<<buffer<<endl;
 				string ack = "ACK";
-				sleep(1);	
+				//sleep(1);	
 				bytes_sent = sendto(sockfd, ack.c_str(), ack.length(), 0, (sockaddr*)&server_address, addr_len);
 				cout<<"Client sent: "<<ack<<endl;
 				cout<<"\n"<< buffer <<endl;
