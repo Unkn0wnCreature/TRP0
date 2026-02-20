@@ -273,15 +273,10 @@ private:
 			response = "Результат:  " + convert_len_to_string(min_dist) + "\nКратчайший путь: " + convert_path_to_string(path);
 		}
 
-		//struct timeval timeout;
-		//timeout.tv_sec = 3;
-		//timeout.tv_usec = 0;
-		//setsockopt(server_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-
 		bool result_sent = false;
 		for (int attempt = 1; attempt <= 3; attempt++){
 			bytes_sent = sendto(server_fd, response.c_str(), response.length(), 0, (sockaddr*)&client_address, addr_len);
-			cout<<"Server sent 123: "<<response<<endl;
+			cout<<"Server sent (response): "<<response<<endl;
 			
 			if (bytes_sent <= 0){
 				cout<<"Error to sent (attempt "<< (attempt)<<")"<<endl;
@@ -289,42 +284,47 @@ private:
 			}
 
 			fd_set readfds;
+			struct timeval timeout;
+
 			FD_ZERO(&readfds);
 			FD_SET(server_fd, &readfds);
 			
-			struct timeval timeout;
 			timeout.tv_sec = 3;
 			timeout.tv_usec = 0;
-			setsockopt(server_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 
 			int select_result = select(server_fd + 1, &readfds, NULL, NULL, &timeout);
 
-			if (FD_ISSET(server_fd, &readfds)){
-				memset(buffer, 0, sizeof(buffer));
+			if (select_result > 0){
+				if (FD_ISSET(server_fd, &readfds)){
+					memset(buffer, 0, sizeof(buffer));
 				
-				sockaddr_in temp_addr;
-				socklen_t temp_len = sizeof(temp_addr);
+					sockaddr_in temp_addr;
+					socklen_t temp_len = sizeof(temp_addr);
 				
-				bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
-
-				if (bytes_received > 0 && string(buffer) == "ACK" && temp_addr.sin_addr.s_addr == client_address.sin_addr.s_addr && temp_addr.sin_port == client_address.sin_port){	
-				cout<<"Server received (ACK): "<<buffer<<endl;
-				result_sent = true;
-				break;
-				} else {
-				cout<<"ACK no received (attempt "<<(attempt)<<")"<<endl;
+					bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
+					if (bytes_received > 0){
+						cout<<"Server received (test): "<<buffer<<endl;
+						if (string(buffer) == "ACK" && temp_addr.sin_addr.s_addr == client_address.sin_addr.s_addr && temp_addr.sin_port == client_address.sin_port){	
+							cout<<"Server received (ACK): "<<buffer<<endl;
+							result_sent = true;
+							break;
+						} else {
+							cout<<"ACK no received (attempt "<<(attempt)<<")"<<endl;
+						}
+					}
 				}
+			} else if (select_result == 0){
+				cout<<"Timeout to receive ACK"<<endl;
+			} else {
+				cout<<"Select error"<<endl;
 			}
-			
-			timeout.tv_sec = 0;
-			setsockopt(server_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-			
-			cout<<"marker point 2"<<endl;
 		}
 
 		if (!result_sent){
 			cout<<"Unable to confirm sending"<<endl;
 		}
+
+		cout<<"Thread completed"<<endl;
 	}
 
 	bool send_tcp(int sockfd, const string& message){

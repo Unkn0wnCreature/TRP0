@@ -93,14 +93,14 @@ private:
 			return false;
 		}
 
-		//struct timeval timeout;
-		//timeout.tv_sec = 3;
-		//timeout.tv_usec = 0;
+		struct timeval timeout;
+		timeout.tv_sec = 3;
+		timeout.tv_usec = 0;
 
-		//if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0){
-			//cout<<"Ошибка присвоения таймаута на получение"<<endl;
-			//return false;
-		//}
+		if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0){
+			cout<<"Ошибка присвоения таймаута на получение"<<endl;
+			return false;
+		}
 
 		return true;
 	}
