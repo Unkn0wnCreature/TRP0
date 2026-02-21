@@ -170,15 +170,20 @@ private:
 		while (true){
 			memset(buffer, 0, sizeof(buffer));
 
+			sleep(0.5);
 			bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
 
-			if (bytes_received <= 0 || string(buffer) == "ACK"){continue;}
-			
 			cout<<"\nServer received (matrix): "<<buffer<<endl;
+
+			string received_data = buffer;
+
+			if (bytes_received <= 0 || received_data.find("ACK_ID") == 0){continue;}
 			
-			string ack = "ACK";	
-			bytes_sent = sendto(server_fd, ack.c_str(), ack.length(), 0, (sockaddr*)&client_address, addr_len);
-			cout<<"Server sent: "<<ack<<endl;
+			//cout<<"\nServer received (matrix): "<<buffer<<endl;
+			
+			//string ack = "ACK";	
+			//bytes_sent = sendto(server_fd, ack.c_str(), ack.length(), 0, (sockaddr*)&client_address, addr_len);
+			//cout<<"Server sent: "<<ack<<endl;
 
 			char data_copy[1024];
 			strcpy(data_copy, buffer);
@@ -240,19 +245,31 @@ private:
 	}
 
 	void handle_udp_client(int server_fd, const char* buffer_data, ssize_t data_size, sockaddr_in client_address){
-		char buffer[1024];
+		//char buffer[1024];
+		char ack_buffer[32];
 		string welcome = "Соединение с сервером установлено";
 		ssize_t bytes_sent;
 		ssize_t bytes_received;
+
+		string data = buffer_data;
+
+		size_t id_pos = data.find("|MSG_ID=");
+		int msg_id = stoi(data.substr(id_pos + 8));
+		data = data.substr(0, id_pos);
+		char m_data[1024];
+		strncpy(m_data, data.c_str(), sizeof(m_data));
 
 		sockaddr_in target_client = client_address;
 		socklen_t target_len = sizeof(target_client);
 
 		sockaddr_in temp_addr;
 		socklen_t temp_len = sizeof(temp_addr);
+		
+		string ack = "ACK_ID=" + to_string(msg_id);
+		bytes_sent = sendto(server_fd, ack.c_str(), ack.length(), 0, (sockaddr*)&target_client, target_len);
+		cout<<"Server sent (ACK): "<<ack<<endl;
 
-		strncpy(buffer, buffer_data, min((size_t)data_size, sizeof(buffer)));
-			
+		/*
 		if (string(buffer) == "exit" || data_size <= 0){
 			cout<<"Клиент отключился"<<endl;
 			return;
@@ -262,21 +279,24 @@ private:
 			cout<<"Acknowledgement received"<<endl;
 			return;
 		}
+		*/
 
-		auto [matr, dot] = read_data(buffer);
+		auto [matr, dot] = read_data(m_data);
 		replace(dot.begin(), dot.end(), '|', ' ');
 
 		auto matrix = parse_matrix(matr.c_str());
-		string response;
+		string result;
 
 		auto [a, b] = get_elements(dot.c_str());
 		auto [min_dist, path] = dijkstra(matrix, a-1, b-1);
 
 		if (min_dist == INF){
-			response = "Пути между вершинами не существует";
+			result = "Пути между вершинами не существует";
 		} else{
-			response = "Результат:  " + convert_len_to_string(min_dist) + "\nКратчайший путь: " + convert_path_to_string(path);
+			result = "Результат: " + convert_len_to_string(min_dist) + "\nКратчайший путь: " + convert_path_to_string(path);
 		}
+
+		string response = "RESP_ID=" + to_string(msg_id) + "|" + result;
 
 		bool result_sent = false;
 		for (int attempt = 1; attempt <= 3; attempt++){
@@ -301,14 +321,14 @@ private:
 
 			if (select_result > 0){
 				if (FD_ISSET(server_fd, &readfds)){
-					memset(buffer, 0, sizeof(buffer));
+					memset(ack_buffer, 0, sizeof(ack_buffer));
 
-					bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&temp_addr, &temp_len);
+					bytes_received = recvfrom(server_fd, ack_buffer, sizeof(ack_buffer), 0, (sockaddr*)&temp_addr, &temp_len);
 
 					if (bytes_received > 0){
-						cout<<"Server received (test): "<<buffer<<endl;
-						if (string(buffer) == "ACK" && temp_addr.sin_addr.s_addr == target_client.sin_addr.s_addr && temp_addr.sin_port == target_client.sin_port){	
-							cout<<"Server received (ACK): "<<buffer<<endl;
+						cout<<"Server received (test): "<<ack_buffer<<endl;
+						if ((string(ack_buffer) == "ACK_ID=" + to_string(msg_id)) && temp_addr.sin_addr.s_addr == target_client.sin_addr.s_addr){	
+							cout<<"Server received (ACK): "<<ack_buffer<<endl;
 							result_sent = true;
 							break;
 						} else {

@@ -224,6 +224,7 @@ private:
 	}
 
 	void run_udp(){
+		static int message_id = 0;
 		string message, data, source, filename;
 		string check = "1";
 		char buffer[1024];
@@ -324,7 +325,7 @@ private:
 			
 			auto current_matrix = parse_matrix(message.c_str());
 			replace(data.begin(), data.end(), ' ', '|');
-			string input = message + "|" + data;
+			string input = message + "|" + data + "|MSG_ID=" + to_string(++message_id);
 
 			//send_udp(sockfd, input);
 
@@ -338,9 +339,11 @@ private:
 				memset(buffer, 0, sizeof(buffer));
 
 				bytes_received = recvfrom(sockfd, buffer, sizeof(buffer), 0, (sockaddr*)&server_address, &addr_len);
+
+				string received = buffer;
 				
-				if (bytes_received > 0 && string(buffer) == "ACK"){
-					cout<<"Client received (ACK): "<<buffer<<endl;
+				if (bytes_received > 0 && received.find("ACK_ID=" + to_string(message_id)) == 0){
+					cout<<"Client received (ACK): "<<received<<endl;
 					data_sent = true;
 					break;
 				} else {
@@ -356,13 +359,14 @@ private:
 			memset(buffer, 0, sizeof(buffer));
 
 			bytes_received = recvfrom(sockfd, buffer, sizeof(buffer), 0, (sockaddr*)&server_address, &addr_len);
-			if (bytes_received > 0 && string(buffer) != "ACK"){
-				cout<<"Client received (result): "<<buffer<<endl;
-				string ack = "ACK";
+			string result = buffer;
+			if (bytes_received > 0 && result.find("RESP_ID=" + to_string(message_id)) == 0){
+				cout<<"Client received (result): "<<result<<endl;
+				string ack = "ACK_ID=" + to_string(message_id);
 				//usleep(10000);
 				bytes_sent = sendto(sockfd, ack.c_str(), ack.length(), 0, (sockaddr*)&server_address, addr_len);
 				cout<<"Client sent (ACK): "<<ack<<endl;
-				cout<<"\n"<< buffer <<endl;
+				cout<< result.substr(result.find("|") + 1) <<endl;
 				//memset(buffer, 0, sizeof(buffer));
 			} else {
 				cout<<"unavle to receive result from server"<<endl;
