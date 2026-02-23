@@ -27,6 +27,9 @@ private:
 	vector<thread> threads;
 	mutex console_mutex;
 	mutex clients_mutex;
+	mutex ack_mutex;
+
+	map<int, bool> ack_flags;
 	map<string, bool> active_clients;
 
 	int client_counter = 0;
@@ -170,16 +173,26 @@ private:
 		while (true){
 			memset(buffer, 0, sizeof(buffer));
 
-			sleep(0.5);
+			//sleep(0.5);
 			bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
 
-			cout<<"\nServer received (matrix): "<<buffer<<endl;
-
-			string received_data = buffer;
-
-			if (bytes_received <= 0 || received_data.find("ACK_ID") == 0){continue;}
+			if (bytes_received <= 0){
+				usleep(1000);
+				continue;
+			}
 			
-			//cout<<"\nServer received (matrix): "<<buffer<<endl;
+			string received = buffer;
+
+			if (received.find("ACK_ID=") == 0){
+				int ack_id = stoi(received.substr(7));
+				{
+					lock_guard<mutex> lock(ack_mutex);
+					ack_flags[ack_id] = true;
+				}
+
+				continue;
+			}
+
 			
 			//string ack = "ACK";	
 			//bytes_sent = sendto(server_fd, ack.c_str(), ack.length(), 0, (sockaddr*)&client_address, addr_len);
@@ -187,6 +200,8 @@ private:
 
 			char data_copy[1024];
 			strcpy(data_copy, buffer);
+
+			cout<<"\nServer received (matrix): "<<data_copy<<endl;
 
 			threads.emplace_back([this, server_fd, data_copy, bytes_received, client_address](){
 					handle_udp_client(server_fd, data_copy, bytes_received, client_address);
@@ -220,23 +235,36 @@ private:
 			}
 
 			auto [matr, dot] = read_data(buffer);
-			replace(dot.begin(), dot.end(), '|', ' ');			
-
-			auto matrix = parse_matrix(matr.c_str());
+			replace(dot.begin(), dot.end(), '|', ' ');
 
 			string response;
 
-			//------------------------------------------------------------------
-			memset(buffer, 0, sizeof(buffer));
-				
-			auto [a, b] = get_elements(dot.c_str());
-			auto [min_dist, path] = dijkstra(matrix, a-1, b-1);
+			if (!isValidMatrix(matr.c_str())){
+				response = "Некорректный формат ввода графа";	
+			} else if (!matrix_is_correct(matr.c_str(), 2)){
+				response = "Некорректная матрица смежности";	
+			} else {
+				auto matrix = parse_matrix(matr.c_str());
 
-			if (min_dist == INF){
-				response = "Пути между вершинами не существует";
-			} else{
-				response = "Результат:  " + convert_len_to_string(min_dist) + "\nКратчайший путь: " + convert_path_to_string(path);
+				auto [a, b] = get_elements(dot.c_str());
+				
+				int min = (a <= b ? a : b);
+				int max = (a <= b ? b : a);
+
+				if (min <= 0 || max > matrix.size()){
+					response = "Вершины не найдены в графе";
+				} else {
+					auto [min_dist, path] = dijkstra(matrix, a-1, b-1);
+
+					if (min_dist == INF){
+						response = "Пути между вершинами не существует";
+					} else{
+						response = "Результат:  " + convert_len_to_string(min_dist) + "\nКратчайший путь: " + convert_path_to_string(path);
+					}
+				}
 			}
+
+			memset(buffer, 0, sizeof(buffer));
 
 			if (!send_tcp(client_socket, response)){
 				cout<<"Ошибка отправки данных"<<endl;
@@ -269,31 +297,34 @@ private:
 		bytes_sent = sendto(server_fd, ack.c_str(), ack.length(), 0, (sockaddr*)&target_client, target_len);
 		cout<<"Server sent (ACK): "<<ack<<endl;
 
-		/*
-		if (string(buffer) == "exit" || data_size <= 0){
-			cout<<"Клиент отключился"<<endl;
-			return;
-		}
-
-		if (string(buffer) == "ACK"){
-			cout<<"Acknowledgement received"<<endl;
-			return;
-		}
-		*/
-
 		auto [matr, dot] = read_data(m_data);
 		replace(dot.begin(), dot.end(), '|', ' ');
 
-		auto matrix = parse_matrix(matr.c_str());
 		string result;
 
-		auto [a, b] = get_elements(dot.c_str());
-		auto [min_dist, path] = dijkstra(matrix, a-1, b-1);
+		if (!isValidMatrix(matr.c_str())){
+			result = "Неверный формат ввода графа";
+		} else if (!matrix_is_correct(matr.c_str(), 2)){
+			result = "Некорректная матрица смежности";
+		} else {
+			auto matrix = parse_matrix(matr.c_str());
 
-		if (min_dist == INF){
-			result = "Пути между вершинами не существует";
-		} else{
-			result = "Результат: " + convert_len_to_string(min_dist) + "\nКратчайший путь: " + convert_path_to_string(path);
+			auto [a, b] = get_elements(dot.c_str());
+
+			int min = (a <= b ? a : b);
+			int max = (a <= b ? b : a);
+			
+			if (min <= 0 || max > matrix.size()){
+				result = "Вершины не найдены в графе";
+			} else {
+				auto [min_dist, path] = dijkstra(matrix, a-1, b-1);
+
+				if (min_dist == INF){
+					result = "Пути между вершинами не существует";
+				} else{
+					result = "Результат: " + convert_len_to_string(min_dist) + "\nКратчайший путь: " + convert_path_to_string(path);
+				}
+			}
 		}
 
 		string response = "RESP_ID=" + to_string(msg_id) + "|" + result;
@@ -307,45 +338,29 @@ private:
 				cout<<"Error to sent (attempt "<< (attempt)<<")"<<endl;
 				continue;
 			}
-
-			fd_set readfds;
-			struct timeval timeout;
-
-			FD_ZERO(&readfds);
-			FD_SET(server_fd, &readfds);
-			
-			timeout.tv_sec = 3;
-			timeout.tv_usec = 0;
-
-			int select_result = select(server_fd + 1, &readfds, NULL, NULL, &timeout);
-
-			if (select_result > 0){
-				if (FD_ISSET(server_fd, &readfds)){
-					memset(ack_buffer, 0, sizeof(ack_buffer));
-
-					bytes_received = recvfrom(server_fd, ack_buffer, sizeof(ack_buffer), 0, (sockaddr*)&temp_addr, &temp_len);
-
-					if (bytes_received > 0){
-						cout<<"Server received (test): "<<ack_buffer<<endl;
-						if ((string(ack_buffer) == "ACK_ID=" + to_string(msg_id)) && temp_addr.sin_addr.s_addr == target_client.sin_addr.s_addr){	
-							cout<<"Server received (ACK): "<<ack_buffer<<endl;
-							result_sent = true;
-							break;
-						} else {
-							cout<<"ACK no received (attempt "<<(attempt)<<")"<<endl;
-							continue;
-						}
+								
+			for (int wait = 0; wait < 30; wait++){
+				{
+					lock_guard<mutex> lock(ack_mutex);
+					if (ack_flags[msg_id]){
+						cout<<"Server received (ACK): ACK_ID= "<<msg_id<<endl;
+						result_sent = true;
+						break;
 					}
 				}
-			} else if (select_result == 0){
-				cout<<"Timeout to receive ACK"<<endl;
-			} else {
-				cout<<"Select error"<<endl;
+				usleep(10000);
 			}
+
+			if (result_sent){break;}
 		}
 
 		if (!result_sent){
-			cout<<"Unable to confirm sending"<<endl;
+			cout<<"Anable to prove sending"<<endl;
+		}
+
+		{
+			lock_guard<mutex> lock(ack_mutex);
+			ack_flags.erase(msg_id);
 		}
 
 		cout<<"Thread completed"<<endl;

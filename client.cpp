@@ -106,7 +106,8 @@ private:
 	}
 
 	void run_tcp(){
-		string message, data, source, filename;
+		string message, data, source, filename, s_size, row;
+		int size;
 		char buffer[1024];
 		ssize_t bytes_received = recv(sockfd, buffer, sizeof(buffer), 0);
 		if (bytes_received > 0){
@@ -114,95 +115,52 @@ private:
 		}
 
 		while (true){
-			cout<<"\nИсточник данных:"<<endl;
+			cout<<"\nИсточник данных (1 - файл; 2 - клавиатура):"<<endl;
 			getline(cin, source);
 
-			if (source == "keyboard"){
-				cout<<"\nВведите описание графа:" <<endl;
-				getline(cin, message);
+			if (source == "exit"){break;}
 
-				if (message.empty()){continue;}
-			
-				if (message != "exit"){
-					if (!isValidMatrix(message.c_str())){
-						cout<<"\nНеверный формат ввода графа"<<endl;
-						continue;
-					}
-
-					if (!matrix_is_correct(message.c_str(), 2)){
-						cout<<"\nГраф должен содержать не менее 6 вершин и 6 рёбер"<<endl;
-						continue;
-					}
-				} else {
-					break;
-				}
-
-				auto current_matrix = parse_matrix(message.c_str());
-
-				cout<<"\nВведите начальную и конечную вершины:"<<endl;
-				getline(cin, data);
-
-				if (data.empty()){continue;}
-
-				if (data != "exit"){
-					auto [a, b] = get_elements(data.c_str());
-					int max = (a<=b ? b : a);
-					int min = (a<=b ? a : b);
-
-					if (min <= 0 || max > current_matrix.size()){
-						cout<<"\nВершины не найдены в графе\n"<<endl;
-						continue;
-					}
-				} else {
-					break;
-				}
-			} else if (source == "file"){
-				cout<<"\nEnter filename"<<endl;
+			if (source == "1"){
+				cout<<"\nEnter filename: "<<endl;
 				getline(cin, filename);
+
+				if (filename.empty()){continue;}
 
 				auto [m, d] = read_from_file(filename);
 
 				message = m;
 				data = d;
-				
-				if (message.empty()){continue;}
-			
-				if (message != "exit"){
-					if (!isValidMatrix(message.c_str())){
-						cout<<"\nНеверный формат ввода графа"<<endl;
-						continue;
-					}
 
-					if (!matrix_is_correct(message.c_str(), 2)){
-						cout<<"\nГраф должен содержать не менее 6 вершин и 6 рёбер"<<endl;
-						continue;
+				if (message.empty() || data.empty()){continue;}
+			} else if (source == "2"){
+				cout<<"\nEnter amount of vertexes: "<<endl;
+				getline(cin, s_size);
+
+				if (s_size == "exit"){break;}
+
+				size = stoi(s_size);
+
+				for (int i = 0; i < size; i++){
+					cout<<"\nEnter row "<< i + 1 <<":"<<endl;
+					getline(cin, row);
+					replace(row.begin(), row.end(), ' ', ',');
+					row = "[" + row + "]";
+					if (i == 0){
+						message = row;
+					} else {
+						message = message + "," + row;
 					}
-				} else {
-					break;
 				}
 
-				auto current_matrix = parse_matrix(message.c_str());
+				message = "[" + message + "]";
+
+				cout<<"\nEnter start and end: "<<endl;
+				getline(cin, data);
+
+				if (data == "exit"){break;}
 
 				if (data.empty()){continue;}
-
-				if (data != "exit"){
-					auto [a, b] = get_elements(data.c_str());
-					int max = (a<=b ? b : a);
-					int min = (a<=b ? a : b);
-
-					if (min <= 0 || max > current_matrix.size()){
-						cout<<"\nВершины не найдены в графе\n"<<endl;
-						continue;
-					}
-				} else {
-					break;
-				}
-			} else if (source == "exit"){
-				break;
-			} else {
-				cout<<"\nInvalid source"<<endl;
-				continue;
-			}
+			} else {continue;}
 			
 			auto current_matrix = parse_matrix(message.c_str());
 			replace(data.begin(), data.end(), ' ', '|');
@@ -225,109 +183,63 @@ private:
 
 	void run_udp(){
 		static int message_id = 0;
-		string message, data, source, filename;
-		string check = "1";
+		int size;
+		string message, data, source, filename, s_size, row;
 		char buffer[1024];
 		socklen_t addr_len = sizeof(server_address);
 		ssize_t bytes_sent, bytes_received;
 		
 		while (true){
-			cout<<"\nИсточник данных:"<<endl;
+			cout<<"\nИсточник данных (1 - файл; 2 - клавиатура):"<<endl;
 			getline(cin, source);
 
-			if (source == "keyboard"){
+			if (source == "exit"){break;}
 
-				cout<<"\nВведите описание графа:" <<endl;
-				getline(cin, message);
-
-				if (message.empty()){continue;}
-			
-				if (message != "exit"){
-					if (!isValidMatrix(message.c_str())){
-						cout<<"\nНеверный формат ввода графа"<<endl;
-						continue;
-					}
-
-					if (!matrix_is_correct(message.c_str(), 2)){
-						cout<<"\nГраф должен содержать не менее 6 вершин и 6 рёбер"<<endl;
-						continue;
-					}
-				} else {
-					break;
-				}
-
-				auto current_matrix = parse_matrix(message.c_str());
-
-				cout<<"\nВведите начальную и конечную вершины:"<<endl;
-				getline(cin, data);
-
-				if (data.empty()){continue;}
-
-				if (data != "exit"){
-					auto [a, b] = get_elements(data.c_str());
-					int max = (a<=b ? b : a);
-					int min = (a<=b ? a : b);
-
-					if (min <= 0 || max > current_matrix.size()){
-						cout<<"\nВершины не найдены в графе\n"<<endl;
-						continue;
-					}
-				} else {
-					break;
-				}
-			} else if (source == "file"){
-				cout<<"\nEnter filename"<<endl;
+			if (source == "1"){
+				cout<<"\nEnter filename: "<<endl;
 				getline(cin, filename);
+
+				if (filename.empty()){continue;}
 
 				auto [m, d] = read_from_file(filename);
 
 				message = m;
 				data = d;
-				
-				if (message.empty()){continue;}
-			
-				if (message != "exit"){
-					if (!isValidMatrix(message.c_str())){
-						cout<<"\nНеверный формат ввода графа"<<endl;
-						continue;
-					}
 
-					if (!matrix_is_correct(message.c_str(), 2)){
-						cout<<"\nГраф должен содержать не менее 6 вершин и 6 рёбер"<<endl;
-						continue;
+				if (message.empty() || data.empty()){continue;}
+			} else if (source == "2"){
+				cout<<"Enter amount of vertexes: "<<endl;
+				getline(cin, s_size);
+
+				if (s_size == "exit"){break;}
+
+				size = stoi(s_size);
+
+				for (int i = 0; i < size; i++){
+					cout<<"\nEnter row "<< i + 1 <<":"<<endl;
+					getline(cin, row);
+					replace(row.begin(), row.end(), ' ', ',');
+					row = "[" + row + "]";
+					if (i == 0){
+						message = row;
+					} else {
+						message = message + "," + row;
 					}
-				} else {
-					break;
 				}
 
-				auto current_matrix = parse_matrix(message.c_str());
+				message = "[" + message + "]";
+
+				cout<<"Enter start and end: "<<endl;
+				getline(cin, data);
+
+				if (data == "exit"){break;}
 
 				if (data.empty()){continue;}
-
-				if (data != "exit"){
-					auto [a, b] = get_elements(data.c_str());
-					int max = (a<=b ? b : a);
-					int min = (a<=b ? a : b);
-
-					if (min <= 0 || max > current_matrix.size()){
-						cout<<"\nВершины не найдены в графе\n"<<endl;
-						continue;
-					}
-				} else {
-					break;
-				}
-			} else if (source == "exit"){
-				break;
-			} else {
-				cout<<"\nInvalid source"<<endl;
-				continue;
-			}
+			} else {continue;}
 			
 			auto current_matrix = parse_matrix(message.c_str());
 			replace(data.begin(), data.end(), ' ', '|');
 			string input = message + "|" + data + "|MSG_ID=" + to_string(++message_id);
-
-			//send_udp(sockfd, input);
 
 			bool data_sent = false;
 			for (int attempt = 1; attempt <= 3; attempt++)	{
@@ -363,11 +275,9 @@ private:
 			if (bytes_received > 0 && result.find("RESP_ID=" + to_string(message_id)) == 0){
 				cout<<"Client received (result): "<<result<<endl;
 				string ack = "ACK_ID=" + to_string(message_id);
-				//usleep(10000);
 				bytes_sent = sendto(sockfd, ack.c_str(), ack.length(), 0, (sockaddr*)&server_address, addr_len);
 				cout<<"Client sent (ACK): "<<ack<<endl;
-				cout<< result.substr(result.find("|") + 1) <<endl;
-				//memset(buffer, 0, sizeof(buffer));
+				cout<< "\n" << result.substr(result.find("|") + 1) <<endl;
 			} else {
 				cout<<"unavle to receive result from server"<<endl;
 			}	
