@@ -23,9 +23,9 @@ compile() {
 start_server() {
 	local proto=$1
 	echo -e "Starting server"
-	./server $SERVER_PORT $protocol &
+	./server $SERVER_PORT $proto &
       	SERVER_PID=$!
-      	sleep 1
+	sleep 0.1
 	echo -e "Server started"
 }
 
@@ -48,7 +48,8 @@ run_test() {
 	local expected_msg=$7
 	local expected_path=$8
 
-	echo -n ""
+	echo -e "Testing active\n"
+
 	./test_client.exp "127.0.0.1" "$SERVER_PORT" "$protocol" "$source" "$param" "$graph_data" "$start_end" "$expected_msg" "$expected_path" > /dev/null
 
 	if [[ $? -eq 0 ]]; then
