@@ -44,7 +44,6 @@ if {$source == "2"} {
 expect {
 	"\nРезультат: $expected_msg\nКратчайший путь: $expected_path\n" {
 		puts "All correct"
-		send "exit\r"
 		exit 0
 	}
 

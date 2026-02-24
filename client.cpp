@@ -150,7 +150,7 @@ private:
 
 				message = "[" + message + "]";
 
-				cout<<"Введите начальную и конечную вершины: "<<endl;
+				cout<<"Введите начальную и конечную вершины:"<<endl;
 				getline(cin, data);
 
 				if (data == "exit"){break;}
