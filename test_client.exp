@@ -10,7 +10,7 @@ set start_end [lindex $argv 6];
 set expected_msg [lindex $argv 8];
 set expected_path [lindex $argv 9];
 
-set timeout 15
+set timeout -1
 
 spawn ./client $ip $port $protocol
 
@@ -18,9 +18,11 @@ expect "Источник данных (1 - файл; 2 - клавиатура):"
 send "$source\r"
 
 if {$source == "1"} {
-	expect "\nВведите путь к файлу:"
+	expect "Введите путь к файлу:"
 	send "$param\r"
-} elseif {$source == "2"} {
+}
+
+if {$source == "2"} {
 	expect "Введите количество вершин:"
 	send "$param\r"
 
@@ -47,7 +49,7 @@ expect {
 	"\nРезультат: \nКратчайший путь: \n" {
 		puts "\n"
 		exit 1
-	}
+	}	
 
 	"\nНекорректный формат ввода графа\n" {
 		puts "\nОшибка: некорректный формат ввода графа"

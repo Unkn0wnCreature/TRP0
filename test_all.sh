@@ -1,3 +1,5 @@
+#!/bin/bash
+
 SERVER_PORT=8080
 SERVER_PID=""
 
@@ -13,22 +15,23 @@ compile() {
 	g++ server.cpp matrix.h graph.h -o server
 	g++ client.cpp matrix.h file_manager.h -o client
 	if [[ $? -ne 0 ]]; then
-		echo -e ""
+		echo -e "Compilation"
 		exit 1
 	fi
 }
 
 start_server() {
 	local proto=$1
-	echo -e ""
+	echo -e "Starting server"
 	./server $SERVER_PORT $protocol &
       	SERVER_PID=$!
       	sleep 1
+	echo -e "Server started"
 }
 
 stop_server() {
 	if [[ -n "$SERVER_PID" ]]; then
-		echo -e ""
+		echo -e "Stopping server"
 		kill $SERVER_PID 2>/dev/null
 		wait $SERVER_PID 2>/dev/null
 		SERVER_PID=""
@@ -49,15 +52,20 @@ run_test() {
 	./test_client.exp "127.0.0.1" "$SERVER_PORT" "$protocol" "$source" "$param" "$graph_data" "$start_end" "$expected_msg" "$expected_path" > /dev/null
 
 	if [[ $? -eq 0 ]]; then
-		echo -e "";
+		echo -e "Success";
 	else
-		echo -e "";
+		echo -e "Error";
 	fi
 }
 
 DATA_6="0 1 0 0 0 0|1 0 1 0 0 0|0 1 0 1 0 0|0 0 1 0 1 0|0 0 0 1 0 1|0 0 0 0 1 0"
 S_E_6="1 6"
 PATH_6="1 2 3 4 5 6"
+
+if ! command -v expect &> /dev/null; then
+	echo "Error: expect is not installed"
+	exit 1
+fi
 
 compile
 chmod +x test_client.exp
