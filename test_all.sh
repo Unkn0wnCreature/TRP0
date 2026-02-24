@@ -50,7 +50,7 @@ run_test() {
 
 	echo -e "Testing active\n"
 
-	./test_client.exp "127.0.0.1" "$SERVER_PORT" "$protocol" "$source" "$param" "$graph_data" "$start_end" "$expected_msg" "$expected_path" > /dev/null
+	./test_client.exp "127.0.0.1" "$SERVER_PORT" "$protocol" "$source" "$param" "$graph_data" "$start_end" "$expected_msg" "$expected_path"
 
 	if [[ $? -eq 0 ]]; then
 		echo -e "Success";
@@ -59,9 +59,9 @@ run_test() {
 	fi
 }
 
-DATA_6="0 1 0 0 0 0|1 0 1 0 0 0|0 1 0 1 0 0|0 0 1 0 1 0|0 0 0 1 0 1|0 0 0 0 1 0"
+DATA_6="0 1 1 0 0 0|1 0 1 0 0 0|1 1 0 1 0 0|0 0 1 0 1 0|0 0 0 1 0 1|0 0 0 0 1 0"
 S_E_6="1 6"
-PATH_6="1 2 3 4 5 6"
+PATH_6="1 3 4 5 6"
 
 if ! command -v expect &> /dev/null; then
 	echo "Error: expect is not installed"
@@ -73,5 +73,5 @@ chmod +x test_client.exp
 
 start_server "tcp"
 
-run_test "N = 6" "tcp" "2" "6" "$DATA_6" "$S_E_6" "5" "$PATH_6"
+run_test "N = 6" "tcp" "2" "6" "$DATA_6" "$S_E_6" "4" "$PATH_6"
 stop_server

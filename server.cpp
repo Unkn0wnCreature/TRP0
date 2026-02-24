@@ -255,7 +255,7 @@ private:
 					if (min_dist == INF){
 						response = "Пути между вершинами не существует";
 					} else{
-						response = "Результат:  " + convert_len_to_string(min_dist) + "\nКратчайший путь: " + convert_path_to_string(path);
+						response = "Результат: " + convert_len_to_string(min_dist) + "\nКратчайший путь: " + convert_path_to_string(path);
 					}
 				}
 			}

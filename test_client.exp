@@ -30,7 +30,7 @@ if {$source == "2"} {
 		set lines [split $graph_data "|"]
 		set line_number 1
 		foreach line $lines {
-			expect "Введите строку $line_number:"
+			expect "Введите ряд $line_number:"
 			send "$line\r"
 			incr line_number
 
