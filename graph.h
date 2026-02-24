@@ -19,7 +19,7 @@ string convert_path_to_string(vector<int> path){
 	string converted_path;
 	for (int i = 0; i < path.size(); i++){
 		converted_path += to_string(path[i]+1);
-		if (i != path.size() - 1){converted_path += " -> ";}
+		if (i != path.size() - 1){converted_path += " ";}
 	}
 	return converted_path;
 }

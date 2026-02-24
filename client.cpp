@@ -109,19 +109,15 @@ private:
 		string message, data, source, filename, s_size, row;
 		int size;
 		char buffer[1024];
-		ssize_t bytes_received = recv(sockfd, buffer, sizeof(buffer), 0);
-		if (bytes_received > 0){
-			cout<< buffer <<endl;
-		}
 
 		while (true){
-			cout<<"\nИсточник данных (1 - файл; 2 - клавиатура):"<<endl;
+			cout<<"Источник данных (1 - файл; 2 - клавиатура):"<<endl;
 			getline(cin, source);
 
 			if (source == "exit"){break;}
 
 			if (source == "1"){
-				cout<<"\nEnter filename: "<<endl;
+				cout<<"Введите путь к файлу:"<<endl;
 				getline(cin, filename);
 
 				if (filename.empty()){continue;}
@@ -133,7 +129,7 @@ private:
 
 				if (message.empty() || data.empty()){continue;}
 			} else if (source == "2"){
-				cout<<"\nEnter amount of vertexes: "<<endl;
+				cout<<"Введите количество вершин:"<<endl;
 				getline(cin, s_size);
 
 				if (s_size == "exit"){break;}
@@ -141,7 +137,7 @@ private:
 				size = stoi(s_size);
 
 				for (int i = 0; i < size; i++){
-					cout<<"\nEnter row "<< i + 1 <<":"<<endl;
+					cout<<"Введите ряд "<< i + 1 <<":"<<endl;
 					getline(cin, row);
 					replace(row.begin(), row.end(), ' ', ',');
 					row = "[" + row + "]";
@@ -154,7 +150,7 @@ private:
 
 				message = "[" + message + "]";
 
-				cout<<"\nEnter start and end: "<<endl;
+				cout<<"Введите начальную и конечную вершины: "<<endl;
 				getline(cin, data);
 
 				if (data == "exit"){break;}
@@ -167,16 +163,17 @@ private:
 			string input = message + "|" + data;
 
 			if (!send_tcp(sockfd, input)){
-				cout<<"error to send"<<endl;
+				cout<<"Ошибка отправки"<<endl;
 				break;
 			}
 			//-------------------------------------------------------------------
 			memset(buffer, 0, sizeof(buffer));
 
 			if (!receive_tcp(sockfd, buffer)){
-				cout<<"server disconnected"<<endl;
+				cout<<"Потеряна связь с сервером"<<endl;
+				break;
 			}
-			cout<<"\n"<< buffer <<endl;
+			cout<<"\n"<< buffer <<"\n"<<endl;
 		}
 
 	}
@@ -190,13 +187,13 @@ private:
 		ssize_t bytes_sent, bytes_received;
 		
 		while (true){
-			cout<<"\nИсточник данных (1 - файл; 2 - клавиатура):"<<endl;
+			cout<<"Источник данных (1 - файл; 2 - клавиатура):"<<endl;
 			getline(cin, source);
 
 			if (source == "exit"){break;}
 
 			if (source == "1"){
-				cout<<"\nEnter filename: "<<endl;
+				cout<<"Введите путь к файлу:"<<endl;
 				getline(cin, filename);
 
 				if (filename.empty()){continue;}
@@ -208,7 +205,7 @@ private:
 
 				if (message.empty() || data.empty()){continue;}
 			} else if (source == "2"){
-				cout<<"Enter amount of vertexes: "<<endl;
+				cout<<"Введите количество вершин:"<<endl;
 				getline(cin, s_size);
 
 				if (s_size == "exit"){break;}
@@ -216,7 +213,7 @@ private:
 				size = stoi(s_size);
 
 				for (int i = 0; i < size; i++){
-					cout<<"\nEnter row "<< i + 1 <<":"<<endl;
+					cout<<"\nВведите ряд "<< i + 1 <<":"<<endl;
 					getline(cin, row);
 					replace(row.begin(), row.end(), ' ', ',');
 					row = "[" + row + "]";
@@ -229,7 +226,7 @@ private:
 
 				message = "[" + message + "]";
 
-				cout<<"Enter start and end: "<<endl;
+				cout<<"Введите начальную и конечную вершины:"<<endl;
 				getline(cin, data);
 
 				if (data == "exit"){break;}
@@ -244,7 +241,7 @@ private:
 			bool data_sent = false;
 			for (int attempt = 1; attempt <= 3; attempt++)	{
 				bytes_sent = sendto(sockfd, input.c_str(), input.length(), 0, (sockaddr*)&server_address, addr_len);
-				cout<<"Client sent: "<<input<<endl;
+				//cout<<"Client sent: "<<input<<endl;
 
 				if (bytes_sent <= 0){continue;}
 
@@ -255,16 +252,16 @@ private:
 				string received = buffer;
 				
 				if (bytes_received > 0 && received.find("ACK_ID=" + to_string(message_id)) == 0){
-					cout<<"Client received (ACK): "<<received<<endl;
+					//cout<<"Client received (ACK): "<<received<<endl;
 					data_sent = true;
 					break;
 				} else {
-					cout<<"ACK not received"<<endl;
+					//cout<<"ACK not received"<<endl;
 				}
 			}
 
 			if (!data_sent){
-				cout<<"Unable to sent data on server"<<endl;
+				cout<<"Ошибка отправки"<<endl;
 				break;
 			}
 
@@ -273,13 +270,13 @@ private:
 			bytes_received = recvfrom(sockfd, buffer, sizeof(buffer), 0, (sockaddr*)&server_address, &addr_len);
 			string result = buffer;
 			if (bytes_received > 0 && result.find("RESP_ID=" + to_string(message_id)) == 0){
-				cout<<"Client received (result): "<<result<<endl;
+				//cout<<"Client received (result): "<<result<<endl;
 				string ack = "ACK_ID=" + to_string(message_id);
 				bytes_sent = sendto(sockfd, ack.c_str(), ack.length(), 0, (sockaddr*)&server_address, addr_len);
-				cout<<"Client sent (ACK): "<<ack<<endl;
-				cout<< "\n" << result.substr(result.find("|") + 1) <<endl;
+				//cout<<"Client sent (ACK): "<<ack<<endl;
+				cout<< "\n" << result.substr(result.find("|") + 1) <<"\n"<<endl;
 			} else {
-				cout<<"unavle to receive result from server"<<endl;
+				cout<<"Ошибка получения данных от сервера"<<endl;
 			}	
 		}
 	}
@@ -309,7 +306,7 @@ int main(int argc, char* argv[]){
 	bool use_tcp = (protocol == "tcp");
 
 	if (!use_tcp && protocol != "udp"){
-		cout<<"Incorrect protocol"<<endl;
+		cout<<"Некорректный протокол"<<endl;
 		return 1;
 	}
 

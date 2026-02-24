@@ -221,10 +221,6 @@ private:
 	void handle_tcp_client(int client_socket){
 		char buffer[1024];
 
-		string welcome = "Соединение с сервером установлено";
-
-		send(client_socket, welcome.c_str(), welcome.length(), 0);
-
 		while (true){
 			memset(buffer, 0, sizeof(buffer));
 			
@@ -241,7 +237,7 @@ private:
 
 			if (!isValidMatrix(matr.c_str())){
 				response = "Некорректный формат ввода графа";	
-			} else if (!matrix_is_correct(matr.c_str(), 2)){
+			} else if (!matrix_is_correct(matr.c_str(), 6)){
 				response = "Некорректная матрица смежности";	
 			} else {
 				auto matrix = parse_matrix(matr.c_str());
@@ -273,7 +269,6 @@ private:
 	}
 
 	void handle_udp_client(int server_fd, const char* buffer_data, ssize_t data_size, sockaddr_in client_address){
-		//char buffer[1024];
 		char ack_buffer[32];
 		string welcome = "Соединение с сервером установлено";
 		ssize_t bytes_sent;
@@ -304,7 +299,7 @@ private:
 
 		if (!isValidMatrix(matr.c_str())){
 			result = "Неверный формат ввода графа";
-		} else if (!matrix_is_correct(matr.c_str(), 2)){
+		} else if (!matrix_is_correct(matr.c_str(), 6)){
 			result = "Некорректная матрица смежности";
 		} else {
 			auto matrix = parse_matrix(matr.c_str());
