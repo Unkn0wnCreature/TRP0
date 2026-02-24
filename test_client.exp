@@ -40,14 +40,13 @@ if {$source == "2"} {
 		send "$start_end\r"
 	}
 }
-
 expect {
-	"\nРезультат: $expected_msg\nКратчайший путь: $expected_path\n" {
+	-re "\nРезультат:\\s+($expected_msg)\\s*\nКратчайший путь:\\s+($expected_path)\\s*\n" {
 		puts "All correct"
 		exit 0
 	}
 
-	"\nРезультат: \nКратчайший путь: \n" {
+	-re "\nРезультат:\\s*\nКратчайший путь:\\s*\n" {
 		puts "\nError"
 		exit 1
 	}	

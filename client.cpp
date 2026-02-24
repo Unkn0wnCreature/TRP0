@@ -108,7 +108,7 @@ private:
 	void run_tcp(){
 		string message, data, source, filename, s_size, row;
 		int size;
-		char buffer[1024];
+		char buffer[25000];
 
 		while (true){
 			cout<<"Источник данных (1 - файл; 2 - клавиатура):"<<endl;
@@ -182,7 +182,7 @@ private:
 		static int message_id = 0;
 		int size;
 		string message, data, source, filename, s_size, row;
-		char buffer[1024];
+		char buffer[25000];
 		socklen_t addr_len = sizeof(server_address);
 		ssize_t bytes_sent, bytes_received;
 		
@@ -213,7 +213,7 @@ private:
 				size = stoi(s_size);
 
 				for (int i = 0; i < size; i++){
-					cout<<"\nВведите ряд "<< i + 1 <<":"<<endl;
+					cout<<"Введите ряд "<< i + 1 <<":"<<endl;
 					getline(cin, row);
 					replace(row.begin(), row.end(), ' ', ',');
 					row = "[" + row + "]";
@@ -287,8 +287,8 @@ private:
 		return (bytes_sent > 0);
 	}
 
-	bool receive_tcp(int sockfd, char buffer[1024]){
-		ssize_t bytes_received = recv(sockfd, buffer, 1024, 0);
+	bool receive_tcp(int sockfd, char buffer[25000]){
+		ssize_t bytes_received = recv(sockfd, buffer, 25000, 0);
 
 		return (bytes_received > 0);
 	}

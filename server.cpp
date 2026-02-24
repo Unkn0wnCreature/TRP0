@@ -63,7 +63,7 @@ private:
 	bool start_tcp(){
 		server_fd = socket(AF_INET, SOCK_STREAM, 0);
 		if (server_fd == -1){
-			std::cerr << "Ошибка создания TCP сокета" <<std::endl;
+			cerr << "Ошибка создания TCP сокета" <<std::endl;
 			return false;
 		}
 
@@ -81,24 +81,24 @@ private:
 		address.sin_port = htons(port);
 
 		if (bind(server_fd, (sockaddr*) &address, sizeof(address)) < 0){
-			std::cerr<<"Ошибка привязки TCP сокета"<<std::endl;
+			cerr<<"Ошибка привязки TCP сокета"<<std::endl;
 			close(server_fd);
 			return false;
 		}
 
 		if (listen(server_fd, 5) < 0){
-			std::cerr<<"Ошибка прослушивания TCP"<<std::endl;
+			cerr<<"Ошибка прослушивания TCP"<<std::endl;
 			close(server_fd);
 			return false;
 		}
-		cout<<"TCP сервер запущен на порту: " << port <<endl;	
+		//cout<<"TCP сервер запущен на порту: " << port <<endl;	
 		return handle_tcp_connections(server_fd);
 	}
 
 	bool start_udp(){
 		server_fd = socket(AF_INET, SOCK_DGRAM, 0);
 		if (server_fd == -1){
-			std::cerr<<"Ошибка создания UDP сокета"<<std::endl;
+			cerr<<"Ошибка создания UDP сокета"<<std::endl;
 			return false;
 		}
 
@@ -109,12 +109,12 @@ private:
 		address.sin_port = htons(port);
 
 		if (bind(server_fd, (sockaddr*) &address, sizeof(address)) < 0){
-			std::cerr<<"Ошибка привязки UDP сокета"<<std::endl;
+			cerr<<"Ошибка привязки UDP сокета"<<std::endl;
 			close(server_fd);
 			return false;
 		}
 		
-		std::cout<< "UDP сервер запущен на порту "<< port <<std::endl;
+		//cout<< "UDP сервер запущен на порту "<< port <<std::endl;
 		return handle_udp_connections(server_fd);
 	}
 
@@ -125,7 +125,7 @@ private:
 		while (true){
 			int client_socket = accept(server_fd, (sockaddr*)&client_address, &addr_len);
 			if (client_socket < 0){
-				std::cerr<<"Ошибка принятия клиента"<<std::endl;
+				cerr<<"Ошибка принятия клиента"<<std::endl;
 				continue;
 			}
 
@@ -141,7 +141,7 @@ private:
 
 			{
 				lock_guard<mutex> lock(console_mutex);
-				cout<<"Подключён клиент "<< current_client_id <<" : "<< client_ip<<" : "<<ntohs(client_address.sin_port)<<" : "<< threads.size() << " потоков активно"<<endl;
+				//cout<<"Подключён клиент "<< current_client_id <<" : "<< client_ip<<" : "<<ntohs(client_address.sin_port)<<" : "<< threads.size() << " потоков активно"<<endl;
 			}
 
 			threads.emplace_back([this, client_socket, current_client_id, client_address]() {
@@ -149,7 +149,7 @@ private:
 
 					{
 						lock_guard<mutex> lock(console_mutex);
-						cout<<"Поток для клиента "<< current_client_id <<" завершён"<<endl;
+						//cout<<"Поток для клиента "<< current_client_id <<" завершён"<<endl;
 					}
 				});
 			//---
@@ -164,8 +164,7 @@ private:
 	}
 
 	bool handle_udp_connections(int server_fd){
-		char buffer[1024];
-		string welcome = "Соединение с сервером установлено";
+		char buffer[25000];
 		sockaddr_in client_address;
 		socklen_t addr_len = sizeof(client_address);
 		ssize_t bytes_sent, bytes_received;
@@ -177,7 +176,6 @@ private:
 			bytes_received = recvfrom(server_fd, buffer, sizeof(buffer), 0, (sockaddr*)&client_address, &addr_len);
 
 			if (bytes_received <= 0){
-				usleep(1000);
 				continue;
 			}
 			
@@ -198,10 +196,10 @@ private:
 			//bytes_sent = sendto(server_fd, ack.c_str(), ack.length(), 0, (sockaddr*)&client_address, addr_len);
 			//cout<<"Server sent: "<<ack<<endl;
 
-			char data_copy[1024];
+			char data_copy[25000];
 			strcpy(data_copy, buffer);
 
-			cout<<"\nServer received (matrix): "<<data_copy<<endl;
+			//cout<<"\nServer received (matrix): "<<data_copy<<endl;
 
 			threads.emplace_back([this, server_fd, data_copy, bytes_received, client_address](){
 					handle_udp_client(server_fd, data_copy, bytes_received, client_address);
@@ -219,14 +217,14 @@ private:
 	}
 
 	void handle_tcp_client(int client_socket){
-		char buffer[1024];
+		char buffer[25000];
 
 		while (true){
 			memset(buffer, 0, sizeof(buffer));
 			
-			ssize_t bytes_received = recv(client_socket, buffer, 1024, 0);
+			ssize_t bytes_received = recv(client_socket, buffer, 25000, 0);
 			if (bytes_received <= 0 || buffer == "exit"){
-				cout<<"Клиент отключился"<<endl;
+				//cout<<"Клиент отключился"<<endl;
 				break;
 			}
 
@@ -279,7 +277,7 @@ private:
 		size_t id_pos = data.find("|MSG_ID=");
 		int msg_id = stoi(data.substr(id_pos + 8));
 		data = data.substr(0, id_pos);
-		char m_data[1024];
+		char m_data[25000];
 		strncpy(m_data, data.c_str(), sizeof(m_data));
 
 		sockaddr_in target_client = client_address;
@@ -290,7 +288,7 @@ private:
 		
 		string ack = "ACK_ID=" + to_string(msg_id);
 		bytes_sent = sendto(server_fd, ack.c_str(), ack.length(), 0, (sockaddr*)&target_client, target_len);
-		cout<<"Server sent (ACK): "<<ack<<endl;
+		//cout<<"Server sent (ACK): "<<ack<<endl;
 
 		auto [matr, dot] = read_data(m_data);
 		replace(dot.begin(), dot.end(), '|', ' ');
@@ -327,7 +325,7 @@ private:
 		bool result_sent = false;
 		for (int attempt = 1; attempt <= 3; attempt++){
 			bytes_sent = sendto(server_fd, response.c_str(), response.length(), 0, (sockaddr*)&target_client, target_len);
-			cout<<"Server sent (response): "<<response<<endl;
+			//cout<<"Server sent (response): "<<response<<endl;
 			
 			if (bytes_sent <= 0){
 				cout<<"Error to sent (attempt "<< (attempt)<<")"<<endl;
@@ -338,7 +336,7 @@ private:
 				{
 					lock_guard<mutex> lock(ack_mutex);
 					if (ack_flags[msg_id]){
-						cout<<"Server received (ACK): ACK_ID= "<<msg_id<<endl;
+						//cout<<"Server received (ACK): ACK_ID= "<<msg_id<<endl;
 						result_sent = true;
 						break;
 					}
@@ -367,8 +365,8 @@ private:
 		return (bytes_sent > 0);
 	}
 
-	bool receive_tcp(int sockfd, char buffer[1024]){
-		ssize_t bytes_received = recv(sockfd, buffer, 1024, 0);
+	bool receive_tcp(int sockfd, char buffer[25000]){
+		ssize_t bytes_received = recv(sockfd, buffer, 25000, 0);
 
 		return (bytes_received > 0);
 	}
