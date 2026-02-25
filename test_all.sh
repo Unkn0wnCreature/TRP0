@@ -59,9 +59,16 @@ run_test() {
 	fi
 }
 
+DATA_5="0 1 0 0 0 0|1 0 1 0 0 0|0 1 0 1 0 0|0 0 1 0 1 0|0 0 0 1 0 1"
+S_E_5="1 5"
+PATH_5="1 2 3 4 5"
+
 DATA_6="0 1 1 0 0 0|1 0 1 0 0 0|1 1 0 1 0 0|0 0 1 0 1 0|0 0 0 1 0 1|0 0 0 0 1 0"
 S_E_6="1 6"
 PATH_6="1 3 4 5 6"
+
+PATH_50="1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25"
+PATH_100="1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20"
 
 if ! command -v expect &> /dev/null; then
 	echo "Ошибка: expect не установлен"
@@ -73,11 +80,15 @@ chmod +x test_client.exp
 
 start_server "tcp"
 
+run_test "N = 5 (некорректная матрица)" "tcp" "2" "5" "$DATA_5" "$S_E_5" "Некорректная матрица смежности" ""
+
 run_test "N = 6 (клавиатура)" "tcp" "2" "6" "$DATA_6" "$S_E_6" "4" "$PATH_6"
 
 run_test "N = 10 (файл)" "tcp" "1" "test.txt" "" "" "4" "1 2 3 4 5"
 
+run_test "N = 50 (файл)" "tcp" "1" "test_50.txt" "" "" "24" "$PATH_50"
 
+run_test "N = 100 (файл)" "tcp" "1" "test_100.txt" "" "" "19" "$PATH_100"
 
 stop_server
 
@@ -86,5 +97,9 @@ sleep 3
 start_server "udp"
 
 run_test "N = 6 (клавиатура)" "udp" "2" "6" "$DATA_6" "$S_E_6" "4" "$PATH_6"
+
+run_test "N = 50 (файл)" "udp" "1" "test_50.txt" "" "" "24" "$PATH_50"
+
+run_test "N = 100 (файл)" "udp" "1" "test_100.txt" "" "" "19" "$PATH_100"
 
 stop_server

@@ -356,7 +356,7 @@ private:
 			ack_flags.erase(msg_id);
 		}
 
-		cout<<"Thread completed"<<endl;
+		//cout<<"Thread completed"<<endl;
 	}
 
 	bool send_tcp(int sockfd, const string& message){
