@@ -92,7 +92,7 @@ run_test "N = 100 (файл)" "tcp" "1" "test_100.txt" "" "" "19" "$PATH_100"
 
 stop_server
 
-sleep 3
+sleep 1
 
 start_server "udp"
 
@@ -103,3 +103,26 @@ run_test "N = 50 (файл)" "udp" "1" "test_50.txt" "" "" "24" "$PATH_50"
 run_test "N = 100 (файл)" "udp" "1" "test_100.txt" "" "" "19" "$PATH_100"
 
 stop_server
+
+echo -e "\n--------Тесстирование многопоточности----------"
+
+start_server "tcp"
+
+echo -e "Запуск 3-х клиентов..."
+
+./test_client.exp "127.0.0.1" "$SERVER_PORT" "tcp" "1" "test_50.txt" "" "" "24" "$PATH_50" > /dev/null &
+PID1=$!
+./test_client.exp "127.0.0.1" "$SERVER_PORT" "tcp" "1" "test_50.txt" "" "" "24" "$PATH_50" > /dev/null &
+PID2=$!
+./test_client.exp "127.0.0.1" "$SERVER_PORT" "tcp" "1" "test_50.txt" "" "" "24" "$PATH_50" > /dev/null &
+PID3=$!
+
+wait $PID1; RES1=$?
+wait $PID2; RES2=$?
+wait $PID3; RES3=$?
+
+if [[ $RES1 -eq 0 && $RES2 -eq 0 && $RES3 -eq 0 ]]; then
+	echo -e "Тест пройден (все клиенты завершили работу корректно)"
+else
+	echo -e "Тест не пройден (не все клиенты завершили работу корректно)"
+fi
