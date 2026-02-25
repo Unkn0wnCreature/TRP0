@@ -34,6 +34,7 @@ stop_server() {
 		echo -e "\nОстановка работы сервера..."
 		kill $SERVER_PID 2>/dev/null
 		wait $SERVER_PID 2>/dev/null
+		echo -e "Сервер $SERVER_PID остановлен"
 		SERVER_PID=""
 	fi
 }
@@ -78,6 +79,8 @@ fi
 compile
 chmod +x test_client.exp
 
+echo -e "--------Тестирование TCP-------------"
+
 start_server "tcp"
 
 run_test "N = 5 (некорректная матрица)" "tcp" "2" "5" "$DATA_5" "$S_E_5" "Некорректная матрица смежности" ""
@@ -93,6 +96,8 @@ run_test "N = 100 (файл)" "tcp" "1" "test_100.txt" "" "" "19" "$PATH_100"
 stop_server
 
 sleep 1
+
+echo -e "\n-----------Тестирование UDP---------------"
 
 start_server "udp"
 
@@ -126,3 +131,5 @@ if [[ $RES1 -eq 0 && $RES2 -eq 0 && $RES3 -eq 0 ]]; then
 else
 	echo -e "Тест не пройден (не все клиенты завершили работу корректно)"
 fi
+
+stop_server
