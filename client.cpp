@@ -7,7 +7,7 @@
 #include <cstring>
 #include <string>
 #include <algorithm>
-#include "matrix.h"
+//#include "matrix.h"
 #include "graph.h"
 #include "file_manager.h"
 using namespace std;
@@ -176,7 +176,6 @@ private:
 				if (data.empty()){continue;}
 			} else {continue;}
 			
-			//auto current_matrix = parse_matrix(message.c_str());
 			// формирование пакета данных серверу
 			replace(data.begin(), data.end(), ' ', '|');
 			string input = message + "|" + data;
@@ -268,7 +267,6 @@ private:
 				if (data.empty()){continue;}
 			} else {continue;}
 			
-			//auto current_matrix = parse_matrix(message.c_str());
 			// формирование пакета данных для отправки на сервер
 			replace(data.begin(), data.end(), ' ', '|');
 			string input = message + "|" + data + "|MSG_ID=" + to_string(++message_id);
