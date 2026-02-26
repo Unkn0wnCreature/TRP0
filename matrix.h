@@ -6,6 +6,7 @@
 #include <cstring>
 using namespace std;
 
+// суммирование этементов матрицы
 int sum_matrix(const vector<vector<int>> matrix){
 	int sum = 0;
 
@@ -17,7 +18,7 @@ int sum_matrix(const vector<vector<int>> matrix){
 	return sum;
 }
 
-
+// парсим матрицу смежности из строки
 vector<vector<int>> parse_matrix(const char*  matrix_str){
 	vector<vector<int>> matrix;
 	string matrix_string = matrix_str;
@@ -42,6 +43,7 @@ vector<vector<int>> parse_matrix(const char*  matrix_str){
 	return matrix;
 }
 
+// проверка на необходимое количество вершин
 bool matrix_is_correct(const char* strmatrix, size_t amount){
 	auto matrix = parse_matrix(strmatrix);
 
@@ -59,6 +61,7 @@ bool matrix_is_correct(const char* strmatrix, size_t amount){
 	return true;
 }
 
+// валидация строки
 bool isValidMatrix(const char* str){
 	if (str == "exit"){return true;}
 	string cleaned = str;
@@ -85,6 +88,7 @@ bool isValidMatrix(const char* str){
 	return true;
 }
 
+// вывод матрицы (для дебага)
 void show_matrix(const char* strmatrix){
 	auto matrix = parse_matrix(strmatrix);
 

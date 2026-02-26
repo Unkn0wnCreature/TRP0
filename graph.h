@@ -9,12 +9,15 @@
 
 using namespace std;
 
+// задаём максимальное значение int за бесконечность
 const int INF = numeric_limits<int>::max();
 
+// преобразование длины в строку
 string convert_len_to_string(int length){
 	return to_string(length);
 }
 
+// преобразование вектора пути в строку
 string convert_path_to_string(vector<int> path){
 	string converted_path;
 	for (int i = 0; i < path.size(); i++){
@@ -24,6 +27,7 @@ string convert_path_to_string(vector<int> path){
 	return converted_path;
 }
 
+// алгоритм Дейкстры
 pair<int, vector<int>> dijkstra(const vector<vector<int>>& matrix, int start, int end){
 	int n = matrix.size();
 	vector<int> distance(n, INF);
@@ -68,19 +72,19 @@ pair<int, vector<int>> dijkstra(const vector<vector<int>>& matrix, int start, in
 	return {distance[end], path};
 }
 
+// чтение из строки начала-конца
 pair<int, int> get_elements(const char* str){
 	int a,b;
 	string str_elements = str;
 	stringstream ss(str_elements);
-	//char ch;
 
 	ss>>a;
-	//ss>>ch;
 	ss>>b;
 
 	return {a,b};
 }
 
+// разделение пакета данных на матрицу / начало-конец
 pair<string, string> read_data(char* str){
 	string stri = str;
 

@@ -7,6 +7,7 @@
 
 using namespace std;
 
+// чтение данных из файла
 pair<string, string> read_from_file(const string& filename){
 	ifstream file(filename);
 	if (!file.is_open()){
@@ -22,6 +23,7 @@ pair<string, string> read_from_file(const string& filename){
 	int size;
 	char separator, ch;
 
+	// получаем размер матрицы и начало-конец
 	getline(file, data);
 
 	stringstream ss(data);
@@ -35,6 +37,7 @@ pair<string, string> read_from_file(const string& filename){
 
 	replace(dot.begin(), dot.end(), '-', ' ');
 
+	// построчно считываем матрицу смежности
 	for (int i = 0; i < size; i++){
 		getline(file, row);
 		replace(row.begin(), row.end(), ' ', ',');
@@ -47,6 +50,7 @@ pair<string, string> read_from_file(const string& filename){
 		}
 	}
 	
+	// формируем строку описания графа
 	matrix = "[" + matrix + "]";
 
 	return {matrix, dot};
