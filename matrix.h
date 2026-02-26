@@ -50,7 +50,7 @@ bool matrix_is_correct(const char* strmatrix, size_t amount){
 	string temp = strmatrix;
 	if (temp == "exit"){return true;}
 
-	if (matrix.size() < amount || matrix.size() > 100){return false;}
+	if (matrix.size() < amount || matrix.size() > 20){return false;}
 
 	for (const auto& row : matrix){
 		if (row.size() != matrix.size()){return false;}
