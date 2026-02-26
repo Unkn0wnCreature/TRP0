@@ -68,7 +68,7 @@ DATA_6="0 1 1 0 0 0|1 0 1 0 0 0|1 1 0 1 0 0|0 0 1 0 1 0|0 0 0 1 0 1|0 0 0 0 1 0"
 S_E_6="1 6"
 PATH_6="1 3 4 5 6"
 
-PATH_50="1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25"
+PATH_20="1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20"
 PATH_100="1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20"
 
 if ! command -v expect &> /dev/null; then
@@ -83,15 +83,15 @@ echo -e "--------Тестирование TCP-------------"
 
 start_server "tcp"
 
-run_test "N = 5 (некорректная матрица)" "tcp" "2" "5" "$DATA_5" "$S_E_5" "Некорректная матрица смежности" ""
+run_test "N = 5 (меньше ОДЗ)" "tcp" "2" "5" "$DATA_5" "$S_E_5" "Некорректная матрица смежности" ""
 
-run_test "N = 6 (клавиатура)" "tcp" "2" "6" "$DATA_6" "$S_E_6" "4" "$PATH_6"
+run_test "N = 6 (нижняя границца ОДЗ)" "tcp" "2" "6" "$DATA_6" "$S_E_6" "4" "$PATH_6"
 
-run_test "N = 10 (файл)" "tcp" "1" "test.txt" "" "" "4" "1 2 3 4 5"
+run_test "N = 10 (внутри ОДЗ)" "tcp" "1" "test.txt" "" "" "4" "1 2 3 4 5"
 
-run_test "N = 50 (файл)" "tcp" "1" "test_50.txt" "" "" "24" "$PATH_50"
+run_test "N = 20 (верхняя граница ОДЗ)" "tcp" "1" "test_20.txt" "" "" "19" "$PATH_20"
 
-run_test "N = 100 (файл)" "tcp" "1" "test_100.txt" "" "" "19" "$PATH_100"
+run_test "N = 21 (больше ОДЗ)" "tcp" "1" "test_21.txt" "" "" "Некорректная матрица смежности" ""
 
 stop_server
 
@@ -103,23 +103,23 @@ start_server "udp"
 
 run_test "N = 6 (клавиатура)" "udp" "2" "6" "$DATA_6" "$S_E_6" "4" "$PATH_6"
 
-run_test "N = 50 (файл)" "udp" "1" "test_50.txt" "" "" "24" "$PATH_50"
+run_test "N = 10 (файл)" "udp" "1" "test.txt" "" "" "4" "1 2 3 4 5"
 
-run_test "N = 100 (файл)" "udp" "1" "test_100.txt" "" "" "19" "$PATH_100"
+run_test "N = 20 (файл)" "udp" "1" "test_20.txt" "" "" "19" "$PATH_20"
 
 stop_server
 
-echo -e "\n--------Тесстирование многопоточности----------"
+echo -e "\n--------Тестирование многопоточности----------"
 
 start_server "tcp"
 
 echo -e "Запуск 3-х клиентов..."
 
-./test_client.exp "127.0.0.1" "$SERVER_PORT" "tcp" "1" "test_50.txt" "" "" "24" "$PATH_50" > /dev/null &
+./test_client.exp "127.0.0.1" "$SERVER_PORT" "tcp" "1" "test_20.txt" "" "" "19" "$PATH_20" > /dev/null &
 PID1=$!
-./test_client.exp "127.0.0.1" "$SERVER_PORT" "tcp" "1" "test_50.txt" "" "" "24" "$PATH_50" > /dev/null &
+./test_client.exp "127.0.0.1" "$SERVER_PORT" "tcp" "1" "test_20.txt" "" "" "19" "$PATH_20" > /dev/null &
 PID2=$!
-./test_client.exp "127.0.0.1" "$SERVER_PORT" "tcp" "1" "test_50.txt" "" "" "24" "$PATH_50" > /dev/null &
+./test_client.exp "127.0.0.1" "$SERVER_PORT" "tcp" "1" "test_20.txt" "" "" "19" "$PATH_20" > /dev/null &
 PID3=$!
 
 wait $PID1; RES1=$?
